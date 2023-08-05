@@ -20,7 +20,7 @@ namespace WizardRogueLike
         public void Draw(Game1 game, SpriteBatch _spriteBatch, int index, bool selected)
         {
             Vector2 iconPosition = new Vector2(0, 116 + (30 * index));
-            if (mySpell != null)
+            if (mySpell != null && game.mySpells[index] != null)
             {
                 float cooldown = (float)Math.Round(game.currentCooldowns[index], 2);
                 Spell newSpellCast = (Spell)Activator.CreateInstance(mySpell, Vector2.Zero, Vector2.Zero, 0, false);
@@ -41,6 +41,7 @@ namespace WizardRogueLike
                 //_spriteBatch.DrawString(game.defaultfont, Math.Round(game.currentCooldowns[index], 2).ToString(), cooldownPosition, Color.Black, 0, new Vector2(cooldownSize.X, 0), 1, SpriteEffects.None, 0);
 
             }
+
         }
     }
     partial class Game1
@@ -50,9 +51,12 @@ namespace WizardRogueLike
 
         public List<SpellIcon> spellIcons = new List<SpellIcon>();
 
+        int oldScrollValue = 0;
+
         void UIInstantiate()
         {
-            foreach(Type spell in mySpells)
+            spellIcons = new List<SpellIcon>();
+            foreach (Type spell in mySpells)
             {
                 spellIcons.Add(new SpellIcon(spell));
             }
@@ -60,15 +64,39 @@ namespace WizardRogueLike
 
         void UIUpdate(GameTime gameTime)
         {
-            if (Keyboard.GetState().IsKeyDown(Keys.D1)) currentSpellIndex = 0;
-            else if (Keyboard.GetState().IsKeyDown(Keys.D2)) currentSpellIndex = 1;
-            else if (Keyboard.GetState().IsKeyDown(Keys.D3)) currentSpellIndex = 2;
-            else if (Keyboard.GetState().IsKeyDown(Keys.D4)) currentSpellIndex = 3;
-            else if (Keyboard.GetState().IsKeyDown(Keys.D5)) currentSpellIndex = 4;
-            else if (Keyboard.GetState().IsKeyDown(Keys.D6)) currentSpellIndex = 5;
-            else if (Keyboard.GetState().IsKeyDown(Keys.D7)) currentSpellIndex = 6;
-            else if (Keyboard.GetState().IsKeyDown(Keys.D8)) currentSpellIndex = 7;
-            else if (Keyboard.GetState().IsKeyDown(Keys.D9)) currentSpellIndex = 8;
+            int chosenSpell = 69;
+            if (Keyboard.GetState().IsKeyDown(Keys.D1)) chosenSpell = 0;
+            else if (Keyboard.GetState().IsKeyDown(Keys.D2)) chosenSpell = 1;
+            else if (Keyboard.GetState().IsKeyDown(Keys.D3)) chosenSpell = 2;
+            else if (Keyboard.GetState().IsKeyDown(Keys.D4)) chosenSpell = 3;
+            else if (Keyboard.GetState().IsKeyDown(Keys.D5)) chosenSpell = 4;
+            else if (Keyboard.GetState().IsKeyDown(Keys.D6)) chosenSpell = 5;
+            else if (Keyboard.GetState().IsKeyDown(Keys.D7)) chosenSpell = 6;
+            else if (Keyboard.GetState().IsKeyDown(Keys.D8)) chosenSpell = 7;
+            else if (Keyboard.GetState().IsKeyDown(Keys.D9)) chosenSpell = 8;
+
+            if (chosenSpell != 69)
+            {
+                if (mySpells[chosenSpell] != null)
+                    currentSpellIndex = chosenSpell;
+            }
+            else
+            {
+                
+                int spellchange = 0;
+                if(Mouse.GetState().ScrollWheelValue != oldScrollValue)
+                {
+                    spellchange = Math.Clamp(oldScrollValue - Mouse.GetState().ScrollWheelValue, -1, 1);
+                    oldScrollValue = Mouse.GetState().ScrollWheelValue;
+                }
+                chosenSpell = Math.Clamp(currentSpellIndex + spellchange, 0, 8);
+                if (chosenSpell != 69)
+                {
+                    if (mySpells[chosenSpell] != null)
+                        currentSpellIndex = chosenSpell;
+                }
+            }
+
 
             currentSpell = mySpells[currentSpellIndex];
 
@@ -89,6 +117,8 @@ namespace WizardRogueLike
                 spellIcon.Draw(this, _spriteBatch, index, selected);
                 index++;
             }
+
+            _spriteBatch.DrawString(defaultfont, "Current Wave: " + gamePhase.ToString() + ", Enemies left: " + enemiesLeft.ToString(), new Vector2(10 + offsetX, areaSize.Y - 32), Color.Green);
         }
     }
 }

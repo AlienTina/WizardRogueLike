@@ -62,7 +62,7 @@ namespace WizardRogueLike
         {
             this.time = time;
             this.damage = damage;
-            this.statusColor = Color.Gray;
+            this.statusColor = Color.Cyan;
         }
 
         public override bool Instantiate(GameObject enemy)

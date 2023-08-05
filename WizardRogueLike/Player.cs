@@ -30,10 +30,19 @@ namespace WizardRogueLike
 
         bool canCast = true;
 
+        void PlayerInstantiate()
+        {
+            playerHealth = 100;
+            bullets = new List<Spell>();
+            playerPosition = new Vector2(areaSize.X / 2, areaSize.Y / 2);
+            invincibility = 0;
+            enemyList = new List<GameObject>();
+        }
+
         void playerUpdate(GameTime gameTime)
         {
             if (invincibility > 0) invincibility -= (float)gameTime.ElapsedGameTime.TotalSeconds;
-            if (playerHealth <= 0) playing = false;
+            if (playerHealth <= 0) state = GameState.ended;
             Vector2 direction = Vector2.Zero;
 
             if (Keyboard.GetState().IsKeyDown(Keys.W))
@@ -115,6 +124,12 @@ namespace WizardRogueLike
             else if (Mouse.GetState().LeftButton == ButtonState.Released) canCast = true;
         }
 
+        void PlayerDraw()
+        {
+            if (invincibility <= 0) _spriteBatch.Draw(playerTexture, playerPosition, Color.White);
+            else _spriteBatch.Draw(playerTexture, playerPosition, Color.Gray);
+            _spriteBatch.Draw(staffTexture, staffPosition, null, Color.White, staffRotation, staffOrigin, Vector2.One, SpriteEffects.None, 0);
+        }
         
     }
 }
