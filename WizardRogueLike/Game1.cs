@@ -27,14 +27,16 @@ namespace WizardRogueLike
         public SpriteFont defaultfont;
         public SpriteFont boldfont;
 
-        public Vector2 areaSize = new Vector2(64 * 15, 64 * 10);
+        public Vector2 areaSize = new Vector2(64 * 20, 64 * 10);
 
-        public int offsetX = 300;
+        public int offsetX = 0;
         public int offsetY = 0;
+        public int offsetX2 = 0;
+        public int offsetY2 = 33;
 
         Random rand = new Random();
 
-        
+        float blink = 1;
 
         public Game1()
         {
@@ -46,8 +48,8 @@ namespace WizardRogueLike
         protected override void Initialize()
         {
             // TODO: Add your initialization logic here
-            _graphics.PreferredBackBufferWidth = (int)areaSize.X + offsetX;
-            _graphics.PreferredBackBufferHeight = (int)areaSize.Y;
+            _graphics.PreferredBackBufferWidth = (int)areaSize.X + offsetX + offsetX2;
+            _graphics.PreferredBackBufferHeight = (int)areaSize.Y + offsetY + offsetY2;
 
             
 
@@ -61,14 +63,25 @@ namespace WizardRogueLike
             allAvailableSpells.Add(typeof(ToxicZone));
             allAvailableSpells.Add(typeof(Summon));
             allAvailableSpells.Add(typeof(Dash));
+            allAvailableSpells.Add(typeof(IceZone));
+            allAvailableSpells.Add(typeof(ElectroBall));
+            allAvailableSpells.Add(typeof(ElectroZone));
+            allAvailableSpells.Add(typeof(WaterBall));
+            allAvailableSpells.Add(typeof(WaterZone));
+            allAvailableSpells.Add(typeof(Turret));
 
-            mySpells = new List<Type>(9);
-            currentCooldowns = new List<float>(9);
-            for (int i = 0; i < 9; i++)
+            mySpells = new List<Type>(5);
+            currentCooldowns = new List<float>(5);
+            spellDamageBonus = new List<int>(5);
+            for (int i = 0; i < 5; i++)
             {
                 mySpells.Add(null);
                 currentCooldowns.Add(0);
+                spellDamageBonus.Add(0);
             }
+
+            /*mySpells[1] = typeof(WaterBall);
+            mySpells[2] = typeof(FireWorm);*/
 
             gamePhase = 0;
 
@@ -76,12 +89,17 @@ namespace WizardRogueLike
 
             BetweenInitialize();
 
+            Window.Title = "Shadow Wizard Money Gang ⚫🧙‍♂️💸💪";
+
             base.Initialize();
         }
 
         protected override void LoadContent()
         {
             _spriteBatch = new SpriteBatch(GraphicsDevice);
+
+            _graphics.SynchronizeWithVerticalRetrace = false;
+            this.IsFixedTimeStep = false;
 
             spellbarTexture = Content.Load<Texture2D>("spellbar");
             spellIconTexture = Content.Load<Texture2D>("spellicon");
@@ -92,6 +110,7 @@ namespace WizardRogueLike
             staffTexture = Content.Load<Texture2D>("sprites/Items/weapon_staff");
             enemyTexture = Content.Load<Texture2D>("sprites/Characters/red_character");
             boxTexture = Content.Load<Texture2D>("box");
+            targetTexture = Content.Load<Texture2D>("sprites/Characters/player_target");
 
             tileSize = tile.Bounds.Size.X;
 
@@ -114,7 +133,17 @@ namespace WizardRogueLike
 
             if (state == GameState.playing)
             {
-
+                if(blink > 0) blink -= (float)gameTime.ElapsedGameTime.TotalSeconds;
+                else
+                {
+                    if (Window.Title == "😎😎😎😎") 
+                        Window.Title = "Shadow Wizard Money Gang ⚫🧙‍♂️💸💪";
+                    else 
+                    {
+                        Window.Title = "😎😎😎😎";
+                    }
+                    blink = 1;
+                }
                 playerUpdate(gameTime);
                 StaffUpdate();
                 enemyUpdate(gameTime);
@@ -124,7 +153,8 @@ namespace WizardRogueLike
             }
             else if(state == GameState.ended)
             {
-                if(Keyboard.GetState().IsKeyDown(Keys.Enter))
+                Window.Title = "ggs 😭😭😭😭😭";
+                if (Keyboard.GetState().IsKeyDown(Keys.Enter))
                 {
                     Initialize();
                     state = GameState.inbetween;
@@ -132,6 +162,7 @@ namespace WizardRogueLike
             }
             else if(state == GameState.inbetween)
             {
+                Window.Title = "Same kokociny som dostal bo🅰";
                 BetweenUpdate();
             }
 
@@ -178,7 +209,7 @@ namespace WizardRogueLike
             _spriteBatch.End();
 
             _spriteBatch.Begin();
-            _spriteBatch.Draw(spellbarTexture, Vector2.Zero, Color.White);
+            //_spriteBatch.Draw(spellbarTexture, Vector2.Zero, Color.White);
             UIDraw();
             _spriteBatch.End();
 

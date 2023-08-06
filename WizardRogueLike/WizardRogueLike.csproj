@@ -1,22 +1,32 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>WinExe</OutputType>
-    <TargetFramework>net6.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net6.0-windows10.0.17763.0</TargetFramework>
     <RollForward>Major</RollForward>
     <PublishReadyToRun>false</PublishReadyToRun>
     <TieredCompilation>false</TieredCompilation>
   </PropertyGroup>
   <PropertyGroup>
     <ApplicationManifest>app.manifest</ApplicationManifest>
-    <ApplicationIcon>Icon.ico</ApplicationIcon>
+    <ApplicationIcon>Wizard.ico</ApplicationIcon>
+    <PlatformTarget>x64</PlatformTarget>
+    <SignAssembly>False</SignAssembly>
   </PropertyGroup>
   <ItemGroup>
-    <None Remove="Icon.ico" />
     <None Remove="Icon.bmp" />
+    <None Remove="Wizard.ico" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="Icon.ico" />
-    <EmbeddedResource Include="Icon.bmp" />
+    <Content Include="Wizard.ico" />
+  </ItemGroup>
+  <ItemGroup>
+	  <EmbeddedResource Include="Icon.bmp">
+		  <LogicalName>Icon.bmp</LogicalName>
+	  </EmbeddedResource>
+	  <EmbeddedResource Include="Wizard.ico">
+		  <LogicalName>Wizard.ico</LogicalName>
+	  </EmbeddedResource>
+
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="MonoGame.Framework.DesktopGL" Version="3.8.1.303" />

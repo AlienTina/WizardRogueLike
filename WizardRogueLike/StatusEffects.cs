@@ -15,6 +15,8 @@ namespace WizardRogueLike
         public float damage { get; set; }
         public Color statusColor { get; set; }
 
+        public bool hasReacted = false;
+
         public StatusEffect(float time, float damage)
         {
             this.time = time;
@@ -74,7 +76,6 @@ namespace WizardRogueLike
             }
             oldSpeed = enemy.speed;
             enemy.speed = oldSpeed / 2;
-            Debug.WriteLine(enemy.speed.ToString() + ":" + oldSpeed.ToString());
             return false;
         }
 
@@ -83,11 +84,57 @@ namespace WizardRogueLike
             time -= (float)gameTime.ElapsedGameTime.TotalSeconds;
             if (time <= 0) 
             {
-                target.speed = oldSpeed;
+                target.speed = target.baseSpeed;
                 return true;
             }
             return false;
         }
+    }
+
+    class Paralized : StatusEffect
+    {
+        float oldSpeed = 0;
+        public Paralized(float time, float damage) : base(time, damage)
+        {
+            this.time = time;
+            this.damage = damage;
+            this.statusColor = Color.Yellow;
+        }
+
+        public override bool Instantiate(GameObject enemy)
+        {
+
+            foreach (object effect in enemy.effects)
+            {
+                if (effect.GetType() == this.GetType()) return true;
+            }
+            
+            enemy.health -= damage;
+            return false;
+        }
+
+        public override bool Update(GameTime gameTime, GameObject target)
+        {
+            target.speed = 0;
+            time -= (float)gameTime.ElapsedGameTime.TotalSeconds;
+            if (time <= 0)
+            {
+                target.speed = target.baseSpeed;
+                return true;
+            }
+            return false;
+        }
+    }
+    
+    class Wet : StatusEffect
+    {
+        public Wet(float time, float damage) : base(time, damage)
+        {
+            this.time = time;
+            this.damage = damage;
+            this.statusColor = Color.Blue;
+        }
+
     }
 
     partial class Game1

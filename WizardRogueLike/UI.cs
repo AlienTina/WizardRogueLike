@@ -19,25 +19,30 @@ namespace WizardRogueLike
 
         public void Draw(Game1 game, SpriteBatch _spriteBatch, int index, bool selected)
         {
-            Vector2 iconPosition = new Vector2(0, 116 + (30 * index));
+            Vector2 iconPosition = new Vector2((255 * index), game.areaSize.Y);
             if (mySpell != null && game.mySpells[index] != null)
             {
                 float cooldown = (float)Math.Round(game.currentCooldowns[index], 2);
                 Spell newSpellCast = (Spell)Activator.CreateInstance(mySpell, Vector2.Zero, Vector2.Zero, 0, false);
                 float maxCooldown = newSpellCast.cooldown;
-                Rectangle cooldownRect = new Rectangle(iconPosition.ToPoint(), new Point((int)(((cooldown) / maxCooldown) * 300), 32));
+                Rectangle cooldownRect = new Rectangle(iconPosition.ToPoint(), new Point((int)(((cooldown) / maxCooldown) * 256), 64));
                 _spriteBatch.Draw(game.boxTexture, cooldownRect, Color.Gray);
             }
             _spriteBatch.Draw(game.spellIconTexture, iconPosition, Color.White);
             if (mySpell != null)
             {
-                
+
                 //Vector2 cooldownSize = game.defaultfont.MeasureString(game.currentCooldowns[index].ToString());
                 //Vector2 cooldownPosition = iconPosition + new Vector2(300, 0);
-                if(!selected)
-                    _spriteBatch.DrawString(game.defaultfont, mySpell.Name, iconPosition + (Vector2.One * 3), Color.Black);
+                String spellName = mySpell.Name;
+                if (game.spellDamageBonus[index] > 0)
+                {
+                    spellName = mySpell.Name + " +" + game.spellDamageBonus[index].ToString();
+                }
+                if (!selected)
+                    _spriteBatch.DrawString(game.defaultfont, spellName, iconPosition + (Vector2.One * 3), Color.Black);
                 else
-                    _spriteBatch.DrawString(game.boldfont, mySpell.Name, iconPosition + (Vector2.One * 3), Color.LimeGreen);
+                    _spriteBatch.DrawString(game.boldfont, spellName, iconPosition + (Vector2.One * 3), Color.LimeGreen);
                 //_spriteBatch.DrawString(game.defaultfont, Math.Round(game.currentCooldowns[index], 2).ToString(), cooldownPosition, Color.Black, 0, new Vector2(cooldownSize.X, 0), 1, SpriteEffects.None, 0);
 
             }
@@ -65,15 +70,11 @@ namespace WizardRogueLike
         void UIUpdate(GameTime gameTime)
         {
             int chosenSpell = 69;
-            if (Keyboard.GetState().IsKeyDown(Keys.D1)) chosenSpell = 0;
-            else if (Keyboard.GetState().IsKeyDown(Keys.D2)) chosenSpell = 1;
-            else if (Keyboard.GetState().IsKeyDown(Keys.D3)) chosenSpell = 2;
-            else if (Keyboard.GetState().IsKeyDown(Keys.D4)) chosenSpell = 3;
-            else if (Keyboard.GetState().IsKeyDown(Keys.D5)) chosenSpell = 4;
-            else if (Keyboard.GetState().IsKeyDown(Keys.D6)) chosenSpell = 5;
-            else if (Keyboard.GetState().IsKeyDown(Keys.D7)) chosenSpell = 6;
-            else if (Keyboard.GetState().IsKeyDown(Keys.D8)) chosenSpell = 7;
-            else if (Keyboard.GetState().IsKeyDown(Keys.D9)) chosenSpell = 8;
+            if (Keyboard.GetState().IsKeyDown(Keys.Q)) chosenSpell = 0;
+            else if (Keyboard.GetState().IsKeyDown(Keys.W)) chosenSpell = 1;
+            else if (Keyboard.GetState().IsKeyDown(Keys.E)) chosenSpell = 2;
+            else if (Keyboard.GetState().IsKeyDown(Keys.R)) chosenSpell = 3;
+            else if (Keyboard.GetState().IsKeyDown(Keys.F)) chosenSpell = 4;
 
             if (chosenSpell != 69)
             {
@@ -105,6 +106,7 @@ namespace WizardRogueLike
                 if (currentCooldowns[i] > 0)
                     currentCooldowns[i] -= (float)gameTime.ElapsedGameTime.TotalSeconds;
                 else currentCooldowns[i] = 0;
+
             }
         }
 

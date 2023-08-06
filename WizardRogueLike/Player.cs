@@ -12,6 +12,7 @@ namespace WizardRogueLike
     {
         Texture2D playerTexture;
         public Texture2D staffTexture;
+        Texture2D targetTexture;
         
         public List<Spell> bullets = new List<Spell>();
 
@@ -30,6 +31,10 @@ namespace WizardRogueLike
 
         bool canCast = true;
 
+        public bool isMoving = false;
+
+        Vector2 playerTarget = new Vector2(0, 0);
+
         void PlayerInstantiate()
         {
             playerHealth = 100;
@@ -37,6 +42,7 @@ namespace WizardRogueLike
             playerPosition = new Vector2(areaSize.X / 2, areaSize.Y / 2);
             invincibility = 0;
             enemyList = new List<GameObject>();
+            playerTarget = playerPosition;
         }
 
         void playerUpdate(GameTime gameTime)
@@ -44,23 +50,22 @@ namespace WizardRogueLike
             if (invincibility > 0) invincibility -= (float)gameTime.ElapsedGameTime.TotalSeconds;
             if (playerHealth <= 0) state = GameState.ended;
             Vector2 direction = Vector2.Zero;
-
-            if (Keyboard.GetState().IsKeyDown(Keys.W))
+            
+            if (Mouse.GetState().RightButton == ButtonState.Pressed)
             {
-                direction.Y = -1;
-            }
-            else if (Keyboard.GetState().IsKeyDown(Keys.S))
-            {
-                direction.Y = 1;
+                playerTarget = (Mouse.GetState().Position.ToVector2() - Vector2.UnitX * offsetX) - Vector2.One * 32;
+                isMoving = true;
             }
 
-            if (Keyboard.GetState().IsKeyDown(Keys.A))
+            if(Vector2.Distance(playerPosition, playerTarget) > 2 && isMoving)
             {
-                direction.X = -1;
+                Vector2 dPos = playerPosition - playerTarget;
+                direction = dPos;
+                
             }
-            else if (Keyboard.GetState().IsKeyDown(Keys.D))
+            else
             {
-                direction.X = 1;
+                isMoving = false;
             }
 
             if(direction != Vector2.Zero) 
@@ -68,7 +73,7 @@ namespace WizardRogueLike
                 direction.Normalize();
             }
 
-            Vector2 futurePosition = playerPosition + (direction * playerSpeed * (float)gameTime.ElapsedGameTime.TotalSeconds);
+            Vector2 futurePosition = playerPosition + (-direction * playerSpeed * (float)gameTime.ElapsedGameTime.TotalSeconds);
 
             bool canMoveX = true;
             bool canMoveY = true;
@@ -117,7 +122,20 @@ namespace WizardRogueLike
                 direction.Normalize();
                 Spell newSpellCast = (Spell)Activator.CreateInstance(currentSpell, playerPosition - (direction * staffTexture.Width), -direction, 300, false);
                 newSpellCast.Instantiate(this);
+                newSpellCast.damage = spellDamageBonus[currentSpellIndex];
                 bullets.Add(newSpellCast);
+                if (currentSpell != typeof(Turret))
+                {
+                    for (int i = 0; i < turrets.Count; i++)
+                    {
+                        Vector2 directionTurret = (turrets[i].position - Mouse.GetState().Position.ToVector2()) + Vector2.UnitX * offsetX;
+                        directionTurret.Normalize();
+                        Spell newSpellCastTurret = (Spell)Activator.CreateInstance(currentSpell, turrets[i].position - (directionTurret * staffTexture.Width), -directionTurret, 300, false);
+                        newSpellCastTurret.Instantiate(this);
+                        newSpellCastTurret.damage = spellDamageBonus[currentSpellIndex];
+                        bullets.Add(newSpellCastTurret);
+                    }
+                }
                 canCast = false;
                 currentCooldowns[currentSpellIndex] = newSpellCast.cooldown;
             }
@@ -128,6 +146,8 @@ namespace WizardRogueLike
         {
             if (invincibility <= 0) _spriteBatch.Draw(playerTexture, playerPosition, Color.White);
             else _spriteBatch.Draw(playerTexture, playerPosition, Color.Gray);
+            if(isMoving)
+                _spriteBatch.Draw(targetTexture, playerTarget, Color.White);
             _spriteBatch.Draw(staffTexture, staffPosition, null, Color.White, staffRotation, staffOrigin, Vector2.One, SpriteEffects.None, 0);
         }
         
