@@ -164,7 +164,7 @@ namespace WizardRogueLike
                     if (enemy == enemyhit) continue;
                     if(Vector2.Distance(enemyhit.position, enemy.position) < range)
                     {
-                        nextEnemies.Add(enemy);
+                        Hit(game, gameTime, enemy);
                     }
                     /*removed = null;
                     foreach (StatusEffect effect in enemyhit.effects)
@@ -685,6 +685,7 @@ namespace WizardRogueLike
             return false;
         }
     }
+    
     #endregion
 
 
@@ -927,7 +928,7 @@ namespace WizardRogueLike
 
                     Vector2 aoeposition = ((direction * y) * 18) + ((rightDirection * x) * 18);
 
-                    WaterAOE newSpellCast = new WaterAOE(position + aoeposition, -direction, 300, false, 0);
+                    WaterAOE newSpellCast = new WaterAOE(position + aoeposition, -direction, 300, false, damage);
                     newSpellCast.Instantiate(game);
                     FireAOEList.Add(newSpellCast);
                 }
@@ -949,6 +950,71 @@ namespace WizardRogueLike
             foreach (WaterAOE fireAOE in FireAOEList)
             {
                 if (fireAOE.Update(game, gameTime)) removed = fireAOE;
+            }
+            if (removed != null) FireAOEList.Remove(removed);
+            if (FireAOEList.Count == 0) return true;
+            return false;
+        }
+    }
+    class WaterWave : Spell
+    {
+
+        public List<WaterAOE> FireAOEList = new List<WaterAOE>();
+        public WaterWave(Vector2 _position, Vector2 _direction, float _speed, bool _isEnemy) : base(_position, _direction, _speed, _isEnemy)
+        {
+            this.position = _position;
+            this.direction = _direction;
+            this.speed = _speed / 2;
+            this.isEnemy = _isEnemy;
+            cooldown = 5;
+            myElement = element.electro;
+        }
+
+        public override void Instantiate(Game1 game)
+        {
+            base.Instantiate(game);
+            for (int y = 0; y <= 1; y++)
+            {
+                for (int x = -2; x <= 2; x++)
+                {
+                    Vector2 rightDirection = new Vector2(-direction.Y, direction.X);
+
+                    Vector2 aoeposition = ((direction * y) * 18) + ((rightDirection * x) * 18);
+
+                    WaterAOE newSpellCast = new WaterAOE(position + aoeposition, -direction, 300, false, damage, 1);
+                    newSpellCast.Instantiate(game);
+                    FireAOEList.Add(newSpellCast);
+                }
+            }
+        }
+
+        public override void Draw(Game1 game, SpriteBatch _spriteBatch, GameTime gameTime)
+        {
+            foreach (WaterAOE bullet in FireAOEList)
+            {
+                bullet.Draw(game, _spriteBatch, gameTime);
+            }
+        }
+
+        public override bool Update(Game1 game, GameTime gameTime)
+        {
+            WaterAOE removed = null;
+
+            List<Vector2> oldPositions = new List<Vector2>();
+
+            foreach (WaterAOE fireAOE in FireAOEList)
+            {
+                Vector2 oldPosition = fireAOE.position - position;
+                oldPositions.Add(oldPosition);
+                if (fireAOE.Update(game, gameTime)) removed = fireAOE;
+            }
+            position += direction * speed * (float)gameTime.ElapsedGameTime.TotalSeconds;
+            
+            int index = 0;
+            foreach (WaterAOE fireAOE in FireAOEList)
+            {
+                fireAOE.position = oldPositions[index] + position;
+                index++;
             }
             if (removed != null) FireAOEList.Remove(removed);
             if (FireAOEList.Count == 0) return true;

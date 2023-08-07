@@ -28,12 +28,13 @@ namespace WizardRogueLike
             chosingUpgrades = false;
             SpellInstantiate();
             ChooseSpells();
-            spellTransforms.Add(typeof(Fireball), typeof(FireWorm));
-            spellTransforms.Add(typeof(FireWorm), typeof(FireZone));
+            spellTransforms.Add(typeof(Fireball), typeof(FireZone));
+            spellTransforms.Add(typeof(FireZone), typeof(FireWorm));
             spellTransforms.Add(typeof(ToxicBall), typeof(ToxicZone));
             spellTransforms.Add(typeof(IceBall), typeof(IceZone));
             spellTransforms.Add(typeof(ElectroBall), typeof(ElectroZone));
             spellTransforms.Add(typeof(WaterBall), typeof(WaterZone));
+            spellTransforms.Add(typeof(WaterZone), typeof(WaterWave));
             spellTransforms.Add(typeof(Summon), typeof(Turret));
         }
 
@@ -261,7 +262,7 @@ namespace WizardRogueLike
         {
             chosingSpells = new List<Type>();
             choicesUpgrades = new List<int>();
-            if (gamePhase < 5)
+            if (gamePhase == 0)
             {
                 
                 chosingSpells.Add(typeof(Fireball));
@@ -269,8 +270,14 @@ namespace WizardRogueLike
                 chosingSpells.Add(typeof(IceBall));
                 chosingSpells.Add(typeof(ElectroBall));
                 chosingSpells.Add(typeof(WaterBall));
-                chosingSpells.Add(typeof(Dash));
                 chosingSpells.Add(typeof(Summon));
+            }
+            else if (gamePhase < 5)
+            {
+
+                chosingSpells.Add(allAvailableSpells[rand.Next(allAvailableSpells.Count)]);
+                chosingSpells.Add(allAvailableSpells[rand.Next(allAvailableSpells.Count)]);
+                chosingSpells.Add(allAvailableSpells[rand.Next(allAvailableSpells.Count)]);
             }
             else if (gamePhase < 10)
             {

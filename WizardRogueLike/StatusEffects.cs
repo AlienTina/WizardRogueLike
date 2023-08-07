@@ -109,7 +109,7 @@ namespace WizardRogueLike
                 if (effect.GetType() == this.GetType()) return true;
             }
             
-            enemy.health -= damage;
+            enemy.health -= 2 + damage;
             return false;
         }
 

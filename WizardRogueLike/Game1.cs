@@ -58,17 +58,10 @@ namespace WizardRogueLike
             allAvailableSpells.Add(typeof(Fireball));
             allAvailableSpells.Add(typeof(ToxicBall));
             allAvailableSpells.Add(typeof(IceBall));
-            allAvailableSpells.Add(typeof(FireWorm));
-            allAvailableSpells.Add(typeof(FireZone));
-            allAvailableSpells.Add(typeof(ToxicZone));
             allAvailableSpells.Add(typeof(Summon));
             allAvailableSpells.Add(typeof(Dash));
-            allAvailableSpells.Add(typeof(IceZone));
             allAvailableSpells.Add(typeof(ElectroBall));
-            allAvailableSpells.Add(typeof(ElectroZone));
             allAvailableSpells.Add(typeof(WaterBall));
-            allAvailableSpells.Add(typeof(WaterZone));
-            allAvailableSpells.Add(typeof(Turret));
 
             mySpells = new List<Type>(5);
             currentCooldowns = new List<float>(5);
@@ -80,8 +73,7 @@ namespace WizardRogueLike
                 spellDamageBonus.Add(0);
             }
 
-            /*mySpells[1] = typeof(WaterBall);
-            mySpells[2] = typeof(FireWorm);*/
+            //mySpells[1] = typeof(WaterWave);
 
             gamePhase = 0;
 
