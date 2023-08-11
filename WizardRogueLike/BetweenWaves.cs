@@ -12,7 +12,6 @@ namespace WizardRogueLike
 
     partial class Game1
     {
-        public GameState state = GameState.inbetween;
         public int gamePhase = 0;
 
         bool chosingUpgrades = false;
@@ -25,16 +24,18 @@ namespace WizardRogueLike
 
         public void BetweenInitialize()
         {
+            spellTransforms = new Dictionary<Type, Type>();
             chosingUpgrades = false;
             SpellInstantiate();
             ChooseSpells();
-            spellTransforms.Add(typeof(Fireball), typeof(FireZone));
-            spellTransforms.Add(typeof(FireZone), typeof(FireWorm));
-            spellTransforms.Add(typeof(ToxicBall), typeof(ToxicZone));
-            spellTransforms.Add(typeof(IceBall), typeof(IceZone));
-            spellTransforms.Add(typeof(ElectroBall), typeof(ElectroZone));
-            spellTransforms.Add(typeof(WaterBall), typeof(WaterZone));
-            spellTransforms.Add(typeof(WaterZone), typeof(WaterWave));
+            spellTransforms.Add(typeof(FireBall), typeof(InfernoOrb));
+            spellTransforms.Add(typeof(VenomDart), typeof(ToxicBarrage));
+            spellTransforms.Add(typeof(FrostShard), typeof(GlacialBurst));
+            spellTransforms.Add(typeof(ShockBolt), typeof(Thunderstrike));
+            spellTransforms.Add(typeof(AquaJet), typeof(TorrentialWave));
+            spellTransforms.Add(typeof(AirBlast), typeof(CycloneWhirl));
+            spellTransforms.Add(typeof(EarthSpike), typeof(QuakeTremor));
+            spellTransforms.Add(typeof(ShadowBolt), typeof(VoidEruption));
             spellTransforms.Add(typeof(Summon), typeof(Turret));
         }
 
@@ -53,44 +54,65 @@ namespace WizardRogueLike
             if (Keyboard.GetState().IsKeyDown(Keys.D1))
             {
                 if (!chosingUpgrades && !chosingTransform)
+                {
                     mySpells[chosenSpell] = chosingSpells[0];
+                    chosen = true;
+                }
                 else if (chosingUpgrades)
                 {
                     spellDamageBonus[choicesUpgrades[0]]++;
+                    chosen = true;
                 }
                 else if (chosingTransform)
                 {
-                    mySpells[0] = spellTransforms[mySpells[0]];
+                    if (spellTransforms.ContainsKey(mySpells[0]))
+                    {
+                        mySpells[0] = spellTransforms[mySpells[0]];
+                        chosen = true;
+                    }
                 }
-                chosen = true;
             }
             else if (Keyboard.GetState().IsKeyDown(Keys.D2))
             {
                 if (!chosingUpgrades && !chosingTransform)
+                {
                     mySpells[chosenSpell] = chosingSpells[1];
+                    chosen = true;
+                }
                 else if (chosingUpgrades)
                 {
                     spellDamageBonus[choicesUpgrades[1]]++;
+                    chosen = true;
                 }
                 else if (chosingTransform)
                 {
-                    mySpells[1] = spellTransforms[mySpells[1]];
+                    if (spellTransforms.ContainsKey(mySpells[1]))
+                    {
+                        mySpells[1] = spellTransforms[mySpells[1]];
+                        chosen = true;
+                    }
                 }
-                chosen = true;
             }
             else if (Keyboard.GetState().IsKeyDown(Keys.D3))
             {
                 if (!chosingUpgrades && !chosingTransform)
+                {
                     mySpells[chosenSpell] = chosingSpells[2];
+                    chosen = true;
+                }
                 else if (chosingUpgrades)
                 {
                     spellDamageBonus[choicesUpgrades[2]]++;
+                    chosen = true;
                 }
                 else if (chosingTransform)
                 {
-                    mySpells[2] = spellTransforms[mySpells[2]];
+                    if (spellTransforms.ContainsKey(mySpells[2]))
+                    {
+                        mySpells[2] = spellTransforms[mySpells[2]];
+                        chosen = true;
+                    }
                 }
-                chosen = true;
             }
             else if (Keyboard.GetState().IsKeyDown(Keys.D4))
             {
@@ -109,8 +131,11 @@ namespace WizardRogueLike
                 }
                 else if (chosingTransform)
                 {
-                    mySpells[3] = spellTransforms[mySpells[3]];
-                    chosen = true;
+                    if (spellTransforms.ContainsKey(mySpells[3]))
+                    {
+                        mySpells[3] = spellTransforms[mySpells[3]];
+                        chosen = true;
+                    }
                 }
             }
             else if (Keyboard.GetState().IsKeyDown(Keys.D5))
@@ -131,8 +156,11 @@ namespace WizardRogueLike
                 }
                 else if (chosingTransform)
                 {
-                    mySpells[4] = spellTransforms[mySpells[4]];
-                    chosen = true;
+                    if (spellTransforms.ContainsKey(mySpells[4]))
+                    {
+                        mySpells[4] = spellTransforms[mySpells[4]];
+                        chosen = true;
+                    }
                 }
             }
             else if (Keyboard.GetState().IsKeyDown(Keys.D6))
@@ -224,13 +252,14 @@ namespace WizardRogueLike
 
         public void BetweenDraw()
         {
+            float offsetYText = 64;
             if (!chosingUpgrades && !chosingTransform)
             {
                 int index = -1;
                 foreach (Type spell in chosingSpells)
                 {
                     if (spell == null) continue;
-                    _spriteBatch.DrawString(defaultfont, (index + 2).ToString() + ": " + spell.Name, areaSize / 2 + (Vector2.UnitY * index * 32), Color.Black);
+                    _spriteBatch.DrawString(defaultfont, (index + 2).ToString() + ": " + spell.Name, areaSize / 2 + (Vector2.UnitY * ((index * 32) - offsetYText)), Color.White);
 
                     index += 1;
                 }
@@ -241,7 +270,7 @@ namespace WizardRogueLike
 
                 foreach (int i in choicesUpgrades)
                 {
-                    _spriteBatch.DrawString(defaultfont, (index + 2).ToString() + ": " + mySpells[i].Name + "( " + (i+1).ToString() + ")" + " +1 damage", areaSize / 2 + (Vector2.UnitY * index * 32), Color.Black);
+                    _spriteBatch.DrawString(defaultfont, (index + 2).ToString() + ": " + mySpells[i].Name + "( " + (i+1).ToString() + ")" + " +1 damage", areaSize / 2 + (Vector2.UnitY * ((index * 32) - offsetYText)), Color.White);
                     index += 1;
                 }
             }
@@ -251,10 +280,10 @@ namespace WizardRogueLike
                 {
                     if (spellTransforms.ContainsKey(mySpells[i]))
                     {
-                        _spriteBatch.DrawString(defaultfont, (i + 1).ToString() + ": " + mySpells[i].Name + "( " + (i + 1).ToString() + ")" + " -> " + spellTransforms[mySpells[i]].Name, areaSize / 2 + (Vector2.UnitY * i * 32), Color.Black);
+                        _spriteBatch.DrawString(defaultfont, (i + 1).ToString() + ": " + mySpells[i].Name + "( " + (i + 1).ToString() + ")" + " -> " + spellTransforms[mySpells[i]].Name, areaSize / 2 + (Vector2.UnitY * ((i * 32) - offsetYText)), Color.White);
                     }
                 }
-                _spriteBatch.DrawString(defaultfont, "0: Skip", areaSize / 2 + (Vector2.UnitY * 6 * 32), Color.Black);
+                _spriteBatch.DrawString(defaultfont, "0: Skip", areaSize / 2 + (Vector2.UnitY * 6 * 32), Color.White);
             }
         }
 
@@ -265,12 +294,15 @@ namespace WizardRogueLike
             if (gamePhase == 0)
             {
                 
-                chosingSpells.Add(typeof(Fireball));
-                chosingSpells.Add(typeof(ToxicBall));
-                chosingSpells.Add(typeof(IceBall));
-                chosingSpells.Add(typeof(ElectroBall));
-                chosingSpells.Add(typeof(WaterBall));
-                chosingSpells.Add(typeof(Summon));
+                chosingSpells.Add(typeof(FireBall));
+                chosingSpells.Add(typeof(VenomDart));
+                chosingSpells.Add(typeof(FrostShard));
+                chosingSpells.Add(typeof(ShockBolt));
+                chosingSpells.Add(typeof(AquaJet));
+                chosingSpells.Add(typeof(AirBlast));
+                chosingSpells.Add(typeof(VineSnare));
+                chosingSpells.Add(typeof(EarthSpike));
+                chosingSpells.Add(typeof(ShadowBolt));
             }
             else if (gamePhase < 5)
             {

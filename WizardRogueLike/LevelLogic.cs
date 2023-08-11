@@ -27,7 +27,7 @@ namespace WizardRogueLike
             }
         }
 
-        Vector2 generateRandomPosition()
+        public Vector2 generateRandomPosition()
         {
             return new Vector2(rand.Next((int)tileSize, (int)areaSize.X - 128), 
                 rand.Next((int)tileSize, (int)areaSize.Y - 128));

@@ -27,7 +27,7 @@ namespace WizardRogueLike
     }
     public abstract class Spell
     {
-        public float cooldown = 0.5f;
+        public float cooldown = 1f;
         public Vector2 position { get; set; }
         public Vector2 direction { get; set; }
         public Texture2D spellTexture { get; set; }
@@ -41,7 +41,19 @@ namespace WizardRogueLike
 
         public float damage = 0;
 
+        public float hitbox = 18;
+
         List<GameObject> enemiesHit = new List<GameObject>();
+
+        List<Spell> spellsHit = new List<Spell>();
+
+        public bool toRemove = false;
+
+        public bool isInteractable = false;
+
+        public bool isObstacle = false;
+
+        public bool removeAfterReaction = false;
 
         public Spell(Vector2 _position, Vector2 _direction, float _speed, bool _isEnemy)
         {
@@ -49,7 +61,7 @@ namespace WizardRogueLike
             this.direction = _direction;
             this.speed = _speed;
             this.isEnemy = _isEnemy;
-            cooldown = 0.5f;
+            cooldown = 1f;
         }
 
         public virtual void Instantiate(Game1 game)
@@ -59,10 +71,21 @@ namespace WizardRogueLike
 
         public virtual bool Update(Game1 game, GameTime gameTime)
         {
+            if (toRemove) return true;
             position += direction * speed * (float)gameTime.ElapsedGameTime.TotalSeconds;
             if (position.X > game.areaSize.X || position.Y > game.areaSize.Y || position.X < 0 || position.Y < 0)
             {
                 return true;
+            }
+            for (int i = 0; i < game.interactableSpells.Count; i++)
+            {
+                if (spellsHit.Contains(game.interactableSpells[i])) continue;
+                if (game.CircleCollision(position, hitbox, game.interactableSpells[i].position, game.interactableSpells[i].hitbox))
+                {
+                    spellsHit.Add(game.interactableSpells[i]);
+                    if (HitSpell(game, gameTime, game.interactableSpells[i])) return true;
+                }
+
             }
             return false;
         }
@@ -72,137 +95,730 @@ namespace WizardRogueLike
             _spriteBatch.Draw(spellTexture, position, Color.White);
         }
 
-        public void Hit(Game1 game, GameTime gameTime, GameObject enemyhit)
+        public void Hit(Game1 game, GameTime gameTime, GameObject enemyhit, float damage)
         {
-            bool hasToxic = false;
-            bool hasSlow = false;
-            bool hasWet = false;
-            bool hasParalisis = false;
-            StatusEffect removed = null;
-            StatusEffect enemyPoison = null;
-            StatusEffect enemySlow = null;
-            StatusEffect enemyWet = null;
-            StatusEffect enemyParalisis = null;
+            if(myElement == element.fire)
+            {
+                Fire newStatus = new Fire(3, 0);
+
+                if (!newStatus.Instantiate(enemyhit))
+                {
+                    enemyhit.effects.Add(newStatus);
+                }
+            }
+            else if (myElement == element.toxic)
+            {
+                Poisoned newStatus = new Poisoned(3, 7.0f/3.0f);
+
+                if (!newStatus.Instantiate(enemyhit))
+                {
+                    enemyhit.effects.Add(newStatus);
+                }
+            }
+            else if (myElement == element.ice)
+            {
+                Ice newStatus = new Ice(3, 0);
+
+                if (!newStatus.Instantiate(enemyhit))
+                {
+                    enemyhit.effects.Add(newStatus);
+                }
+            }
+            else if (myElement == element.electro)
+            {
+                Lightning newStatus = new Lightning(3, 0);
+
+                if (!newStatus.Instantiate(enemyhit))
+                {
+                    enemyhit.effects.Add(newStatus);
+                }
+            }
+            else if (myElement == element.water)
+            {
+                Water newStatus = new Water(3, 0);
+
+                if (!newStatus.Instantiate(enemyhit))
+                {
+                    enemyhit.effects.Add(newStatus);
+                }
+            }
+            else if (myElement == element.wind)
+            {
+                Wind newStatus = new Wind(3, 0);
+
+                if (!newStatus.Instantiate(enemyhit))
+                {
+                    enemyhit.effects.Add(newStatus);
+                }
+            }
+            else if (myElement == element.nature)
+            {
+                Nature newStatus = new Nature(3, 0);
+
+                if (!newStatus.Instantiate(enemyhit))
+                {
+                    enemyhit.effects.Add(newStatus);
+                }
+            }
+            else if (myElement == element.ground)
+            {
+                Ground newStatus = new Ground(3, 0);
+
+                if (!newStatus.Instantiate(enemyhit))
+                {
+                    enemyhit.effects.Add(newStatus);
+                }
+            }
+            else if(myElement == element.dark)
+            {
+                Dark newStatus = new Dark(3, 0);
+
+                if (!newStatus.Instantiate(enemyhit))
+                {
+                    enemyhit.effects.Add(newStatus);
+                }
+                game.playerHealth += damage / 5;
+            }
+            if (enemiesHit.Contains(enemyhit)) return;
+            if (game.reationCooldown > 0) return;
+            List<StatusEffect> removed = new List<StatusEffect>();
+            List<StatusEffect> newEffects = new List<StatusEffect>();
             foreach (StatusEffect effect in enemyhit.effects)
             {
+                bool hasReacted = false;
+                Debug.WriteLine(effect.GetType());
                 if (effect.hasReacted) continue;
-                if (effect.GetType() == typeof(Poisoned)) 
+                if (effect.GetType() == typeof(Fire)) 
                 {
-                    hasToxic = true;
-                    enemyPoison = effect;
+                    if (myElement == element.ground)
+                    {
+                        MagmaZone newSpellCast = new MagmaZone(enemyhit.position, -direction, 300, false);
+                        newSpellCast.Instantiate(game);
+                        game.spellsToSpawn.Add(newSpellCast);
+                        removed.Add(effect);
+                        hasReacted = true;
+                    }
+                    else if(myElement == element.water)
+                    {
+                        SteamCloud newSpellCast = new SteamCloud(enemyhit.position - (Vector2.One * 32), -direction, 300, false);
+                        newSpellCast.Instantiate(game);
+                        game.spellsToSpawn.Add(newSpellCast);
+                        removed.Add(effect);
+                        hasReacted = true;
+                    }
+                    else if (myElement == element.dark)
+                    {
+                        ShadowFlames newSpellCast = new ShadowFlames(enemyhit.position - (Vector2.One * 32), -direction, 300, false, 1);
+                        newSpellCast.Instantiate(game);
+                        game.spellsToSpawn.Add(newSpellCast);
+                        removed.Add(effect);
+                        hasReacted = true;
+                    }
+                    else if (myElement == element.electro)
+                    {
+                        FireBlast newSpellCast = new FireBlast(enemyhit.position, -direction, 300, false);
+                        newSpellCast.Instantiate(game);
+                        game.spellsToSpawn.Add(newSpellCast);
+                        removed.Add(effect);
+                        hasReacted = true;
+
+                    }
                 }
-                if (effect.GetType() == typeof(Slow)) 
+                else if (effect.GetType() == typeof(Poisoned)) 
                 {
-                    hasSlow = true;
-                    if (myElement == element.fire || myElement == element.electro) removed = effect;
-                    enemySlow = effect;
+                    if (myElement == element.water)
+                    {
+                        enemyhit.defenseShred++;
+                        hasReacted = true;
+                    }
+                    else if (myElement == element.dark)
+                    {
+                        DarkCorrosion newStatus = new DarkCorrosion(3, 7.0f / 3.0f);
+
+                        if (!newStatus.Instantiate(enemyhit))
+                        {
+                            newEffects.Add(newStatus);
+                        }
+                        enemyhit.damageBonus -= 0.5f;
+                        hasReacted = true;
+                    }
                 }
-                if (effect.GetType() == typeof(Wet))
+                else if (effect.GetType() == typeof(Ice))
                 {
-                    hasWet = true;
-                    if (myElement == element.electro) removed = effect;
-                    enemyWet = effect;
+                    if(myElement == element.wind)
+                    {
+                        Frostbite newStatus = new Frostbite(3, 0);
+
+                        if (!newStatus.Instantiate(enemyhit))
+                        {
+                            newEffects.Add(newStatus);
+                        }
+                        hasReacted = true;
+
+                    }
+                    else if (myElement == element.water)
+                    {
+                        Frozen newStatus = new Frozen(1.5f, 0);
+
+                        if (!newStatus.Instantiate(enemyhit))
+                        {
+                            newEffects.Add(newStatus);
+                        }
+                        hasReacted = true;
+                    }
                 }
-                if (effect.GetType() == typeof(Paralized))
+                else if (effect.GetType() == typeof(Lightning))
                 {
-                    hasParalisis = true;
-                    if (myElement == element.fire) removed = effect;
-                    enemyParalisis = effect;
+                    if(myElement == element.wind)
+                    {
+                        List<GameObject> closeEnemies = new List<GameObject>();
+                        float range = 516;
+                        foreach(GameObject enemy in game.enemyList)
+                        {
+                            if (enemy == enemyhit) continue;
+                            if (Vector2.Distance(enemyhit.position, enemy.position) < range)
+                                closeEnemies.Add(enemy);
+                        }
+                        foreach(GameObject enemy in closeEnemies)
+                        {
+                            Vector2 direction = enemyhit.position - enemy.position;
+                            direction.Normalize();
+                            ShockBolt newSpellCast = new ShockBolt(enemyhit.position - (direction * (game.playerRadius * 2f)), -direction, 300, false);
+                            newSpellCast.Instantiate(game);
+                            newSpellCast.damage = damage;
+                            game.spellsToSpawn.Add(newSpellCast);
+                        }
+                        hasReacted = true;
+
+                    }
+                    else if(myElement == element.dark)
+                    {
+                        ElectroZone newSpellCast = new ElectroZone(enemyhit.position, -direction, 300, false);
+                        newSpellCast.Instantiate(game);
+                        game.spellsToSpawn.Add(newSpellCast);
+                        removed.Add(effect);
+                        hasReacted = true;
+
+                    }
+                    else if (myElement == element.fire)
+                    {
+                        FireBlast newSpellCast = new FireBlast(enemyhit.position, -direction, 300, false);
+                        newSpellCast.Instantiate(game);
+                        game.spellsToSpawn.Add(newSpellCast);
+                        removed.Add(effect);
+                        hasReacted = true;
+
+                    }
                 }
+                else if (effect.GetType() == typeof(Water))
+                {
+                    if(myElement == element.toxic)
+                    {
+                        enemyhit.defenseShred++;
+                        hasReacted = true;
+                    }
+                    else if (myElement == element.nature)
+                    {
+                        RootZone newSpellCast = new RootZone(enemyhit.position, -direction, 300, false);
+                        newSpellCast.Instantiate(game);
+                        game.spellsToSpawn.Add(newSpellCast);
+                        removed.Add(effect);
+                        hasReacted = true;
+                    }
+                    else if (myElement == element.fire)
+                    {
+                        SteamCloud newSpellCast = new SteamCloud(enemyhit.position - (Vector2.One * 32), -direction, 300, false);
+                        newSpellCast.Instantiate(game);
+                        game.spellsToSpawn.Add(newSpellCast);
+                        removed.Add(effect);
+                        hasReacted = true;
+                    }
+                    else if (myElement == element.ice)
+                    {
+                        Frozen newStatus = new Frozen(1.5f, 0);
+
+                        if (!newStatus.Instantiate(enemyhit))
+                        {
+                            newEffects.Add(newStatus);
+                        }
+                        hasReacted = true;
+                    }
+                }
+                else if (effect.GetType() == typeof(Wind))
+                {
+                    if (myElement == element.ice)
+                    {
+                        Frostbite newStatus = new Frostbite(3, 0);
+
+                        if (!newStatus.Instantiate(enemyhit))
+                        {
+                            newEffects.Add(newStatus);
+                        }
+                        hasReacted = true;
+
+                    }
+                    else if (myElement == element.electro)
+                    {
+                        List<GameObject> closeEnemies = new List<GameObject>();
+                        float range = 516;
+                        foreach (GameObject enemy in game.enemyList)
+                        {
+                            if (enemy == enemyhit) continue;
+                            if (Vector2.Distance(enemyhit.position, enemy.position) < range)
+                                closeEnemies.Add(enemy);
+                        }
+                        foreach (GameObject enemy in closeEnemies)
+                        {
+                            Vector2 direction = enemyhit.position - enemy.position;
+                            direction.Normalize();
+                            ShockBolt newSpellCast = new ShockBolt(enemyhit.position - (direction * (game.playerRadius * 2f)), -direction, 300, false);
+                            newSpellCast.Instantiate(game);
+                            newSpellCast.damage = damage;
+                            game.spellsToSpawn.Add(newSpellCast);
+                        }
+                        hasReacted = true;
+                    }
+                    else if(myElement == element.dark)
+                    {
+                        ShadowZone newSpellCast = new ShadowZone(enemyhit.position - (Vector2.One * 32), -direction, 300, false);
+                        newSpellCast.Instantiate(game);
+                        game.spellsToSpawn.Add(newSpellCast);
+                        removed.Add(effect);
+                        hasReacted = true;
+
+                    }
+                }
+                else if (effect.GetType() == typeof(Nature))
+                {
+                    if (myElement == element.water)
+                    {
+                        RootZone newSpellCast = new RootZone(enemyhit.position, -direction, 300, false);
+                        newSpellCast.Instantiate(game);
+                        game.spellsToSpawn.Add(newSpellCast);
+                        removed.Add(effect);
+                        hasReacted = true;
+                    }
+                    else if (myElement == element.ground)
+                    {
+                        Petrified newStatus = new Petrified(1.5f, 0);
+
+                        if (!newStatus.Instantiate(enemyhit))
+                        {
+                            newEffects.Add(newStatus);
+                        }
+                        hasReacted = true;
+                    }
+                }
+                else if (effect.GetType() == typeof(Ground))
+                {
+                    if(myElement == element.fire)
+                    {
+                        MagmaZone newSpellCast = new MagmaZone(enemyhit.position, -direction, 300, false);
+                        newSpellCast.Instantiate(game);
+                        game.spellsToSpawn.Add(newSpellCast);
+                        removed.Add(effect);
+                        hasReacted = true;
+                    }
+                    else if(myElement == element.nature)
+                    {
+                        Petrified newStatus = new Petrified(1.5f, 0);
+
+                        if (!newStatus.Instantiate(enemyhit))
+                        {
+                            newEffects.Add(newStatus);
+                        }
+                        hasReacted = true;
+                    }
+                }
+                else if (effect.GetType() == typeof(Dark))
+                {
+                    if(myElement == element.toxic)
+                    {
+                        DarkCorrosion newStatus = new DarkCorrosion(3, 7.0f/3.0f);
+
+                        if (!newStatus.Instantiate(enemyhit))
+                        {
+                            newEffects.Add(newStatus);
+                        }
+                        enemyhit.damageBonus -= 0.5f;
+                        hasReacted = true;
+                    }
+                    else if (myElement == element.electro)
+                    {
+                        ElectroZone newSpellCast = new ElectroZone(enemyhit.position, -direction, 300, false);
+                        newSpellCast.Instantiate(game);
+                        game.spellsToSpawn.Add(newSpellCast);
+                        removed.Add(effect);
+                        hasReacted = true;
+                    }
+                    else if (myElement == element.wind)
+                    {
+                        ShadowZone newSpellCast = new ShadowZone(enemyhit.position - (Vector2.One * 32), -direction, 300, false);
+                        newSpellCast.Instantiate(game);
+                        game.spellsToSpawn.Add(newSpellCast);
+                        removed.Add(effect);
+                        hasReacted = true;
+                    }
+                    else if (myElement == element.fire)
+                    {
+                        ShadowFlames newSpellCast = new ShadowFlames(enemyhit.position - (Vector2.One * 32), -direction, 300, false, 1);
+                        newSpellCast.Instantiate(game);
+                        game.spellsToSpawn.Add(newSpellCast);
+                        removed.Add(effect);
+                        hasReacted = true;
+                    }
+                }
+                if (hasReacted) game.reationCooldown = 3;
             }
 
-            enemyhit.effects.Remove(removed);
-
-            if(myElement == element.fire && hasToxic && !enemiesHit.Contains(enemyhit))
+            enemyhit.effects.AddRange(newEffects);
+            if (removed.Count > 0)
             {
-                enemiesHit.Add(enemyhit);
-                FireBlast newSpellCast = new FireBlast(position, direction, 300, false);
-                newSpellCast.Instantiate(game);
-
-                game.spellsToSpawn.Add(newSpellCast);
-                enemyPoison.hasReacted = true;
+                foreach(StatusEffect effect in removed)
+                    enemyhit.effects.Remove(effect);
             }
-            if(myElement == element.fire && hasSlow && !enemiesHit.Contains(enemyhit))
-            {
-                enemiesHit.Add(enemyhit);
-                enemyhit.health -= 2;
-                enemySlow.hasReacted = true;
-                WaterAOE newSpellCast = new WaterAOE(enemyhit.position, direction, 300, false, 2, 5);
-                newSpellCast.Instantiate(game);
+            enemiesHit.Add(enemyhit);
+        }
 
-                game.spellsToSpawn.Add(newSpellCast);
-            }
-            if(myElement == element.electro && hasSlow && !enemiesHit.Contains(enemyhit))
-            {
-                enemiesHit.Add(enemyhit);
-                Paralized paralisis = new Paralized(1, 5);
-                paralisis.Instantiate(enemyhit);
-                enemyhit.effects.Add(paralisis);
-                enemySlow.hasReacted = true;
+        public bool HitSpell(Game1 game, GameTime gameTime, Spell spell)
+        {
+            element spellElement = spell.myElement;
 
-            }
-            if (myElement == element.electro && hasToxic && !enemiesHit.Contains(enemyhit))
-            {
-                enemiesHit.Add(enemyhit);
-                ElectroAOE newSpellCast = new ElectroAOE(enemyhit.position, direction, 300, false, 2, 5);
-                newSpellCast.Instantiate(game);
 
-                game.spellsToSpawn.Add(newSpellCast);
-                enemyPoison.hasReacted = true;
-            }
-            if(myElement == element.electro && hasWet && !enemiesHit.Contains(enemyhit))
+            
+            return false;
+        }
+    }
+    #region reactionSpells
+    class MagmaZone : Spell
+    {
+        public float lifetime { get; set; }
+        public MagmaZone(Vector2 _position, Vector2 _direction, float _speed, bool _isEnemy) : base(_position, _direction, _speed, _isEnemy)
+        {
+            this.position = _position;
+            this.direction = _direction;
+            this.speed = _speed;
+            this.isEnemy = _isEnemy;
+            this.lifetime = 1f;
+            myElement = element.none;
+            this.damage = 0;
+            this.hitbox = 128;
+        }
+
+        public MagmaZone(Vector2 _position, Vector2 _direction, float _speed, bool _isEnemy, float _lifetime) : base(_position, _direction, _speed, _isEnemy)
+        {
+            this.position = _position;
+            this.direction = _direction;
+            this.speed = _speed;
+            this.isEnemy = _isEnemy;
+            this.lifetime = _lifetime;
+            myElement = element.none;
+            this.damage = 0;
+            this.hitbox = 128;
+        }
+
+        public override void Instantiate(Game1 game)
+        {
+            spellTexture = game.Content.Load<Texture2D>("sprites/Characters/MagmaZone");
+        }
+
+        public override bool Update(Game1 game, GameTime gameTime)
+        {
+            lifetime -= (float)gameTime.ElapsedGameTime.TotalSeconds;
+            if (lifetime <= 0) return true;
+
+            if (!isEnemy)
             {
-                enemiesHit.Add(enemyhit);
-                Paralized paralisis = new Paralized(1.5f, damage);
-                enemyhit.effects.Add(paralisis);
-                enemyWet.hasReacted = true;
-                paralisis.Instantiate(enemyhit);
-                List<GameObject> nextEnemies = new List<GameObject>();
-                float range = 128;
                 foreach (GameObject enemy in game.enemyList)
                 {
-                    if (enemy == enemyhit) continue;
-                    if(Vector2.Distance(enemyhit.position, enemy.position) < range)
+                    if (game.CircleCollision(position, hitbox, enemy.position, game.playerRadius))
                     {
-                        Hit(game, gameTime, enemy);
+                        enemy.Hit(game, (10 + damage) * (float)gameTime.ElapsedGameTime.TotalSeconds);
+                        Hit(game, gameTime, enemy, (1 + damage) * (float)gameTime.ElapsedGameTime.TotalSeconds);
                     }
-                    /*removed = null;
-                    foreach (StatusEffect effect in enemyhit.effects)
-                    {
-                        if (effect.GetType() == typeof(Wet))
-                        {
-                            effect.hasReacted = true;
-                            removed = effect;
-                            enemy.effects.Add(paralisis);
-                        }
-                    }
-                    enemyhit.effects.Remove(removed);*/
-                }
-                if (nextEnemies.Count > 0)
-                {
-                    foreach(GameObject enemy in nextEnemies)
-                    {
-                        Paralized paralisis2 = new Paralized(1.5f, damage);
-                        paralisis2.Instantiate(enemy);
-                        enemy.effects.Add(paralisis2);
-                    }
-                    /*Vector2 direction = (enemyhit.position - nextEnemy.position);
-                    direction.Normalize();
-                    Spell newSpellCast = (Spell)Activator.CreateInstance(this.GetType(), enemyhit.position - (direction * (game.playerRadius * 2f)), -direction, 300, false);
-                    newSpellCast.Instantiate(game);
-                    newSpellCast.damage = damage;
-                    game.spellsToSpawn.Add(newSpellCast);*/
                 }
             }
-            if (myElement == element.fire && hasParalisis && !enemiesHit.Contains(enemyhit))
-            {
-                enemiesHit.Add(enemyhit);
-                FireBlast newSpellCast = new FireBlast(enemyhit.position, direction, 300, false);
-                newSpellCast.Instantiate(game);
+            return false;
+        }
+    }
+    class RootZone : Spell
+    {
+        public float lifetime { get; set; }
+        public RootZone(Vector2 _position, Vector2 _direction, float _speed, bool _isEnemy) : base(_position, _direction, _speed, _isEnemy)
+        {
+            this.position = _position;
+            this.direction = _direction;
+            this.speed = _speed;
+            this.isEnemy = _isEnemy;
+            this.lifetime = 1f;
+            myElement = element.nature;
+            this.damage = 0;
+            this.hitbox = 64;
+        }
 
-                game.spellsToSpawn.Add(newSpellCast);
-                enemyParalisis.hasReacted = true;
+        public RootZone(Vector2 _position, Vector2 _direction, float _speed, bool _isEnemy, float _lifetime) : base(_position, _direction, _speed, _isEnemy)
+        {
+            this.position = _position;
+            this.direction = _direction;
+            this.speed = _speed;
+            this.isEnemy = _isEnemy;
+            this.lifetime = _lifetime;
+            myElement = element.nature;
+            this.damage = 0;
+            this.hitbox = 64;
+        }
+
+        public override void Instantiate(Game1 game)
+        {
+            spellTexture = game.Content.Load<Texture2D>("sprites/Characters/RootZone");
+        }
+
+        public override bool Update(Game1 game, GameTime gameTime)
+        {
+            lifetime -= (float)gameTime.ElapsedGameTime.TotalSeconds;
+            if (lifetime <= 0) return true;
+
+            if (!isEnemy)
+            {
+                foreach (GameObject enemy in game.enemyList)
+                {
+                    if (game.CircleOnBox(enemy.position, game.playerRadius, position, spellTexture.Bounds.Size.ToVector2()))
+                    {
+                        enemy.Hit(game, (10 + damage) * (float)gameTime.ElapsedGameTime.TotalSeconds);
+                        Hit(game, gameTime, enemy, (1 + damage) * (float)gameTime.ElapsedGameTime.TotalSeconds);
+                    }
+                }
             }
+            return false;
+        }
+    }
+    class ElectroZone : Spell
+    {
+        public float lifetime { get; set; }
+        public float pullForce = 64;
+        public ElectroZone(Vector2 _position, Vector2 _direction, float _speed, bool _isEnemy) : base(_position, _direction, _speed, _isEnemy)
+        {
+            this.position = _position;
+            this.direction = _direction;
+            this.speed = _speed;
+            this.isEnemy = _isEnemy;
+            this.lifetime = 1f;
+            myElement = element.dark;
+            this.damage = 0;
+            this.hitbox = 64;
+        }
+
+        public ElectroZone(Vector2 _position, Vector2 _direction, float _speed, bool _isEnemy, float _lifetime) : base(_position, _direction, _speed, _isEnemy)
+        {
+            this.position = _position;
+            this.direction = _direction;
+            this.speed = _speed;
+            this.isEnemy = _isEnemy;
+            this.lifetime = _lifetime;
+            myElement = element.dark;
+            this.damage = 0;
+            this.hitbox = 64;
+        }
+
+        public override void Instantiate(Game1 game)
+        {
+            spellTexture = game.Content.Load<Texture2D>("sprites/Characters/ElectroField");
+        }
+
+        public override bool Update(Game1 game, GameTime gameTime)
+        {
+            lifetime -= (float)gameTime.ElapsedGameTime.TotalSeconds;
+            if (lifetime <= 0) return true;
+
+            if (!isEnemy)
+            {
+                foreach (GameObject enemy in game.enemyList)
+                {
+                    if (game.CircleOnBox(enemy.position, game.playerRadius, position, spellTexture.Bounds.Size.ToVector2()))
+                    {
+                        enemy.Hit(game, (5 + damage) * (float)gameTime.ElapsedGameTime.TotalSeconds);
+                        Hit(game, gameTime, enemy, (5 + damage) * (float)gameTime.ElapsedGameTime.TotalSeconds);
+                        Vector2 direction = (position + Vector2.One * (hitbox/2)) - enemy.position;
+                        direction.Normalize();
+                        enemy.position += direction * pullForce * (float)gameTime.ElapsedGameTime.TotalSeconds;
+                    }
+                }
+            }
+            return false;
+        }
+    }
+    class SteamCloud : Spell
+    {
+        public float lifetime { get; set; }
+        public SteamCloud(Vector2 _position, Vector2 _direction, float _speed, bool _isEnemy) : base(_position, _direction, _speed, _isEnemy)
+        {
+            this.position = _position;
+            this.direction = _direction;
+            this.speed = _speed;
+            this.isEnemy = _isEnemy;
+            this.lifetime = 1f;
+            myElement = element.none;
+            this.damage = 0;
+            this.hitbox = 64;
+        }
+
+        public SteamCloud(Vector2 _position, Vector2 _direction, float _speed, bool _isEnemy, float _lifetime) : base(_position, _direction, _speed, _isEnemy)
+        {
+            this.position = _position;
+            this.direction = _direction;
+            this.speed = _speed;
+            this.isEnemy = _isEnemy;
+            this.lifetime = _lifetime;
+            myElement = element.none;
+            this.damage = 0;
+            this.hitbox = 64;
+        }
+
+        public override void Instantiate(Game1 game)
+        {
+            spellTexture = game.Content.Load<Texture2D>("sprites/Characters/SteamCloud");
+        }
+
+        public override bool Update(Game1 game, GameTime gameTime)
+        {
+            lifetime -= (float)gameTime.ElapsedGameTime.TotalSeconds;
+            if (lifetime <= 0) return true;
+
+            if (!isEnemy)
+            {
+                foreach (GameObject enemy in game.enemyList)
+                {
+                    if (game.CircleCollision(position, hitbox, enemy.position, game.playerRadius))
+                    {
+                        enemy.Hit(game, (5 + damage) * (float)gameTime.ElapsedGameTime.TotalSeconds);
+                        Slow newStatus = new Slow(3, 0);
+
+                        if (!newStatus.Instantiate(enemy))
+                        {
+                            enemy.effects.Add(newStatus);
+                        }
+                        Hit(game, gameTime, enemy, (5 + damage) * (float)gameTime.ElapsedGameTime.TotalSeconds);
+                        
+                    }
+                }
+            }
+            return false;
+        }
+    }
+    class ShadowZone : Spell
+    {
+        public float lifetime { get; set; }
+        public ShadowZone(Vector2 _position, Vector2 _direction, float _speed, bool _isEnemy) : base(_position, _direction, _speed, _isEnemy)
+        {
+            this.position = _position;
+            this.direction = _direction;
+            this.speed = _speed;
+            this.isEnemy = _isEnemy;
+            this.lifetime = 2f;
+            myElement = element.none;
+            this.damage = 0;
+            this.hitbox = 64;
+        }
+
+        public ShadowZone(Vector2 _position, Vector2 _direction, float _speed, bool _isEnemy, float _lifetime) : base(_position, _direction, _speed, _isEnemy)
+        {
+            this.position = _position;
+            this.direction = _direction;
+            this.speed = _speed;
+            this.isEnemy = _isEnemy;
+            this.lifetime = _lifetime;
+            myElement = element.none;
+            this.damage = 0;
+            this.hitbox = 64;
+        }
+
+        public override void Instantiate(Game1 game)
+        {
+            spellTexture = game.Content.Load<Texture2D>("sprites/Characters/ShadowZone");
+        }
+
+        public override bool Update(Game1 game, GameTime gameTime)
+        {
+            lifetime -= (float)gameTime.ElapsedGameTime.TotalSeconds;
+            if (lifetime <= 0) return true;
+
+            if (!isEnemy)
+            {
+                foreach (GameObject enemy in game.enemyList)
+                {
+                    if (game.CircleCollision(position, hitbox, enemy.position, game.playerRadius))
+                    {
+                        //enemy.health -= (5 + damage) * (float)gameTime.ElapsedGameTime.TotalSeconds;
+                        Confused newStatus = new Confused(3, 0);
+
+                        if (!newStatus.Instantiate(enemy))
+                        {
+                            enemy.effects.Add(newStatus);
+                        }
+                        Hit(game, gameTime, enemy, 0);
+
+                    }
+                }
+            }
+            return false;
+        }
+    }
+    class ShadowFlames : Spell
+    {
+        public float lifetime { get; set; }
+        public ShadowFlames(Vector2 _position, Vector2 _direction, float _speed, bool _isEnemy) : base(_position, _direction, _speed, _isEnemy)
+        {
+            this.position = _position;
+            this.direction = _direction;
+            this.speed = _speed;
+            this.isEnemy = _isEnemy;
+            this.lifetime = 2f;
+            myElement = element.none;
+            this.damage = 0;
+            this.hitbox = 64;
+        }
+
+        public ShadowFlames(Vector2 _position, Vector2 _direction, float _speed, bool _isEnemy, float _lifetime) : base(_position, _direction, _speed, _isEnemy)
+        {
+            this.position = _position;
+            this.direction = _direction;
+            this.speed = _speed;
+            this.isEnemy = _isEnemy;
+            this.lifetime = _lifetime;
+            myElement = element.none;
+            this.damage = 0;
+            this.hitbox = 64;
+        }
+
+        public override void Instantiate(Game1 game)
+        {
+            spellTexture = game.Content.Load<Texture2D>("sprites/Characters/ShadowFlames");
+        }
+
+        public override bool Update(Game1 game, GameTime gameTime)
+        {
+            lifetime -= (float)gameTime.ElapsedGameTime.TotalSeconds;
+            if (lifetime <= 0) return true;
+
+            if (!isEnemy)
+            {
+                foreach (GameObject enemy in game.enemyList)
+                {
+                    if (game.CircleCollision(position, hitbox, enemy.position, game.playerRadius))
+                    {
+                        enemy.health -= (5 + damage) * (float)gameTime.ElapsedGameTime.TotalSeconds;
+                        Confused newStatus = new Confused(3, 0);
+
+                        if (!newStatus.Instantiate(enemy))
+                        {
+                            enemy.effects.Add(newStatus);
+                        }
+                        Hit(game, gameTime, enemy, 0);
+
+                    }
+                }
+            }
+            return false;
         }
     }
     class FireBlast : Spell
@@ -215,8 +831,9 @@ namespace WizardRogueLike
             this.speed = _speed;
             this.isEnemy = _isEnemy;
             this.lifetime = 0.25f;
-            myElement = element.none;
+            myElement = element.fire;
             this.damage = 20;
+            this.hitbox = 64;
         }
 
         public FireBlast(Vector2 _position, Vector2 _direction, float _speed, bool _isEnemy, float _lifetime) : base(_position, _direction, _speed, _isEnemy)
@@ -226,8 +843,9 @@ namespace WizardRogueLike
             this.speed = _speed;
             this.isEnemy = _isEnemy;
             this.lifetime = _lifetime;
-            myElement = element.none;
+            myElement = element.fire;
             this.damage = 20;
+            this.hitbox = 64;
         }
 
         public override void Instantiate(Game1 game)
@@ -244,26 +862,28 @@ namespace WizardRogueLike
             {
                 foreach (GameObject enemy in game.enemyList)
                 {
-                    if (game.CircleCollision(position, 64, enemy.position, game.playerRadius))
+                    if (game.CircleCollision(position, hitbox, enemy.position, game.playerRadius))
                     {
-                        enemy.health -= damage * (float)gameTime.ElapsedGameTime.TotalSeconds;
+                        enemy.Hit(game, damage * (float)gameTime.ElapsedGameTime.TotalSeconds);
+                        Hit(game, gameTime, enemy, damage * (float)gameTime.ElapsedGameTime.TotalSeconds);
                     }
                 }
             }
             return false;
         }
     }
+
+    #endregion
+
     #region Balls
-    class Fireball : Spell
+    class FireBall : Spell
     {
-        FireBlast myblast;
-        public Fireball(Vector2 _position, Vector2 _direction, float _speed, bool _isEnemy) : base(_position, _direction, _speed, _isEnemy)
+        public FireBall(Vector2 _position, Vector2 _direction, float _speed, bool _isEnemy) : base(_position, _direction, _speed, _isEnemy)
         {
             this.position = _position;
             this.direction = _direction;
             this.speed = _speed;
             this.isEnemy = _isEnemy;
-            this.cooldown = 2;
             myElement = element.fire;
         }
 
@@ -273,10 +893,10 @@ namespace WizardRogueLike
             {
                 foreach (GameObject enemy in game.enemyList)
                 {
-                    if (game.CircleCollision(position, 18, enemy.position, game.playerRadius))
+                    if (game.CircleCollision(position, hitbox, enemy.position, game.playerRadius))
                     {
-                        enemy.health -= 7 + damage;
-                        Hit(game, gameTime, enemy);
+                        enemy.Hit(game, 5 + damage);
+                        Hit(game, gameTime, enemy, 5 + damage);
                         return true;
                     }
                 }
@@ -285,9 +905,9 @@ namespace WizardRogueLike
             
         }
     }
-    class ToxicBall : Spell
+    class VenomDart : Spell
     {
-        public ToxicBall(Vector2 _position, Vector2 _direction, float _speed, bool _isEnemy) : base(_position, _direction, _speed, _isEnemy)
+        public VenomDart(Vector2 _position, Vector2 _direction, float _speed, bool _isEnemy) : base(_position, _direction, _speed, _isEnemy)
         {
             this.position = _position;
             this.direction = _direction;
@@ -307,14 +927,12 @@ namespace WizardRogueLike
             {
                 foreach (GameObject enemy in game.enemyList)
                 {
-                    if (game.CircleCollision(position, 18, enemy.position, game.playerRadius))
+                    if (game.CircleCollision(position, hitbox, enemy.position, game.playerRadius))
                     {
-                        Poisoned newPoison = new Poisoned(3, 7 + damage);
-                        if (!newPoison.Instantiate(enemy))
-                        {
-                            enemy.effects.Add(newPoison);
-                            return true;
-                        }
+                        enemy.Hit(game, 5 + damage);
+                        Hit(game, gameTime, enemy, 5 + damage);
+                        return true;
+
                     }
                 }
             }
@@ -322,15 +940,14 @@ namespace WizardRogueLike
             
         }
     }
-    class IceBall : Spell
+    class FrostShard : Spell
     {
-        public IceBall(Vector2 _position, Vector2 _direction, float _speed, bool _isEnemy) : base(_position, _direction, _speed, _isEnemy)
+        public FrostShard(Vector2 _position, Vector2 _direction, float _speed, bool _isEnemy) : base(_position, _direction, _speed, _isEnemy)
         {
             this.position = _position;
             this.direction = _direction;
             this.speed = _speed;
             this.isEnemy = _isEnemy;
-            cooldown = 1;
             myElement = element.ice;
         }
 
@@ -345,16 +962,10 @@ namespace WizardRogueLike
             {
                 foreach (GameObject enemy in game.enemyList)
                 {
-                    if (game.CircleCollision(position, 18, enemy.position, game.playerRadius))
+                    if (game.CircleCollision(position, hitbox, enemy.position, game.playerRadius))
                     {
-                        Slow newSlow = new Slow(1.5f, 0);
-                        if (!newSlow.Instantiate(enemy))
-                        {
-                            
-                            enemy.effects.Add(newSlow);
-                            
-                        }
-                        enemy.health -= 5 + damage;
+                        enemy.Hit(game, 5 + damage);
+                        Hit(game, gameTime, enemy, 5 + damage);
                         return true;
                     }
                 }
@@ -363,140 +974,15 @@ namespace WizardRogueLike
 
         }
     }
-    class ElectroBall : Spell
+    class FreezeBall : Spell
     {
-        FireBlast myblast;
-        public ElectroBall(Vector2 _position, Vector2 _direction, float _speed, bool _isEnemy) : base(_position, _direction, _speed, _isEnemy)
+        public FreezeBall(Vector2 _position, Vector2 _direction, float _speed, bool _isEnemy) : base(_position, _direction, _speed, _isEnemy)
         {
             this.position = _position;
             this.direction = _direction;
             this.speed = _speed;
             this.isEnemy = _isEnemy;
-            this.cooldown = 1.5f;
-            myElement = element.electro;
-        }
-
-        public override void Instantiate(Game1 game)
-        {
-            spellTexture = game.Content.Load<Texture2D>("sprites/Characters/yellow_hand");
-        }
-
-        public override bool Update(Game1 game, GameTime gameTime)
-        {
-            if (!isEnemy)
-            {
-                foreach (GameObject enemy in game.enemyList)
-                {
-                    if (game.CircleCollision(position, 18, enemy.position, game.playerRadius))
-                    {
-                        enemy.health -= 7 + damage;
-                        Hit(game, gameTime, enemy);
-                        return true;
-                    }
-                }
-            }
-            return base.Update(game, gameTime);
-
-        }
-    }
-    class WaterBall : Spell
-    {
-        FireBlast myblast;
-        public WaterBall(Vector2 _position, Vector2 _direction, float _speed, bool _isEnemy) : base(_position, _direction, _speed, _isEnemy)
-        {
-            this.position = _position;
-            this.direction = _direction;
-            this.speed = _speed;
-            this.isEnemy = _isEnemy;
-            this.cooldown = 1f;
-            myElement = element.water;
-        }
-
-        public override void Instantiate(Game1 game)
-        {
-            spellTexture = game.Content.Load<Texture2D>("sprites/Characters/water_ball");
-        }
-
-        public override bool Update(Game1 game, GameTime gameTime)
-        {
-            if (!isEnemy)
-            {
-                foreach (GameObject enemy in game.enemyList)
-                {
-                    if (game.CircleCollision(position, 18, enemy.position, game.playerRadius))
-                    {
-                        Wet newWet = new Wet(3, 0);
-                        
-                        if (!newWet.Instantiate(enemy))
-                        {
-                            enemy.effects.Add(newWet);
-                        }
-                        enemy.health -= 5 + damage;
-                        return true;
-                    }
-                }
-            }
-            return base.Update(game, gameTime);
-
-        }
-    }
-    #endregion
-    #region AOEParticles
-    class ToxicAOE : Spell
-    {
-        public float lifetime { get; set; }
-        public ToxicAOE(Vector2 _position, Vector2 _direction, float _speed, bool _isEnemy, float _damage) : base(_position, _direction, _speed, _isEnemy)
-        {
-            this.position = _position;
-            this.direction = _direction;
-            this.speed = _speed;
-            this.isEnemy = _isEnemy;
-            lifetime = 1;
-            myElement = element.toxic;
-            this.damage = _damage;
-        }
-
-        public override void Instantiate(Game1 game)
-        {
-            spellTexture = game.Content.Load<Texture2D>("sprites/Characters/green_hand");
-        }
-
-        public override bool Update(Game1 game, GameTime gameTime)
-        {
-            lifetime -= (float)gameTime.ElapsedGameTime.TotalSeconds;
-            if (lifetime <= 0) return true;
-            if (!isEnemy)
-            {
-                foreach (GameObject enemy in game.enemyList)
-                {
-                    if (game.CircleCollision(position, 18, enemy.position, game.playerRadius))
-                    {
-                        Poisoned newPoison = new Poisoned(2, 2 + damage);
-                        if (!newPoison.Instantiate(enemy))
-                        {
-                            enemy.effects.Add(newPoison);
-                            Hit(game, gameTime, enemy);
-                            return true;
-                        }
-                    }
-                }
-            }
-            return false;
-
-        }
-    }
-    class IceAOE : Spell
-    {
-        public float lifetime { get; set; }
-        public IceAOE(Vector2 _position, Vector2 _direction, float _speed, bool _isEnemy, float _damage) : base(_position, _direction, _speed, _isEnemy)
-        {
-            this.position = _position;
-            this.direction = _direction;
-            this.speed = _speed;
-            this.isEnemy = _isEnemy;
-            lifetime = 3;
             myElement = element.ice;
-            this.damage = _damage;
         }
 
         public override void Instantiate(Game1 game)
@@ -506,368 +992,672 @@ namespace WizardRogueLike
 
         public override bool Update(Game1 game, GameTime gameTime)
         {
-            lifetime -= (float)gameTime.ElapsedGameTime.TotalSeconds;
-            if (lifetime <= 0) return true;
             if (!isEnemy)
             {
                 foreach (GameObject enemy in game.enemyList)
                 {
-                    if (game.CircleCollision(position, 18, enemy.position, game.playerRadius))
+                    if (game.CircleCollision(position, hitbox, enemy.position, game.playerRadius))
                     {
-                        Slow newSlow = new Slow(1.5f, 0);
-                        if (!newSlow.Instantiate(enemy))
+                        enemy.Hit(game, 5 + damage);
+                        Stun newStatus = new Stun(3, 0);
+
+                        if (!newStatus.Instantiate(enemy))
                         {
-                            enemy.effects.Add(newSlow);
-                            Hit(game, gameTime, enemy);
+                            enemy.effects.Add(newStatus);
                         }
+                        //Hit(game, gameTime, enemy, 5 + damage);
+                        return true;
                     }
                 }
             }
-            return false;
+            return base.Update(game, gameTime);
 
         }
-    }
-    class FireAOE : Spell
-    {
-        public float lifetime {  get; set; }
-        float reactionWait = 0;
-        public FireAOE(Vector2 _position, Vector2 _direction, float _speed, bool _isEnemy, float _damage) : base(_position, _direction, _speed, _isEnemy)
-        {
-            this.position = _position;
-            this.direction = _direction;
-            this.speed = _speed;
-            this.isEnemy = _isEnemy;
-            this.lifetime = 2;
-            myElement = element.fire;
-            this.damage = _damage;
-        }
-
-        public FireAOE(Vector2 _position, Vector2 _direction, float _speed, bool _isEnemy, float _damage, float _lifetime) : base(_position, _direction, _speed, _isEnemy)
-        {
-            this.position = _position;
-            this.direction = _direction;
-            this.speed = _speed;
-            this.isEnemy = _isEnemy;
-            this.lifetime = _lifetime;
-            myElement = element.fire;
-            this.damage = _damage;
-        }
-
-        public override bool Update(Game1 game, GameTime gameTime)
-        {
-            lifetime -= (float)gameTime.ElapsedGameTime.TotalSeconds;
-            if (lifetime <= 0) return true;
-
-            if (!isEnemy)
-            {
-                foreach (GameObject enemy in game.enemyList)
-                {
-                    if (game.CircleCollision(position, 18, enemy.position, game.playerRadius))
-                    {
-                        enemy.health -= (2 + damage) * (float)gameTime.ElapsedGameTime.TotalSeconds;
-                        if(reactionWait <= 0)
-                            Hit(game, gameTime, enemy);
-                        
-                    }
-                }
-            }
-            reactionWait -= (float)gameTime.ElapsedGameTime.TotalSeconds;
-            return false;
-        }
-    }
-    class ElectroAOE : Spell
-    {
-        public float lifetime { get; set; }
-        float reactionWait = 0;
-        public ElectroAOE(Vector2 _position, Vector2 _direction, float _speed, bool _isEnemy, float _damage) : base(_position, _direction, _speed, _isEnemy)
-        {
-            this.position = _position;
-            this.direction = _direction;
-            this.speed = _speed;
-            this.isEnemy = _isEnemy;
-            this.lifetime = 3;
-            myElement = element.electro;
-            this.damage = _damage;
-        }
-
-        public ElectroAOE(Vector2 _position, Vector2 _direction, float _speed, bool _isEnemy, float _damage, float _lifetime) : base(_position, _direction, _speed, _isEnemy)
-        {
-            this.position = _position;
-            this.direction = _direction;
-            this.speed = _speed;
-            this.isEnemy = _isEnemy;
-            this.lifetime = _lifetime;
-            myElement = element.electro;
-            this.damage = _damage;
-        }
-        public override void Instantiate(Game1 game)
-        {
-            spellTexture = game.Content.Load<Texture2D>("sprites/Characters/yellow_hand");
-        }
-
-        public override bool Update(Game1 game, GameTime gameTime)
-        {
-            lifetime -= (float)gameTime.ElapsedGameTime.TotalSeconds;
-            if (lifetime <= 0) return true;
-
-            if (!isEnemy)
-            {
-                foreach (GameObject enemy in game.enemyList)
-                {
-                    if (game.CircleCollision(position, 18, enemy.position, game.playerRadius))
-                    {
-                        enemy.health -= (2 + damage) * (float)gameTime.ElapsedGameTime.TotalSeconds;
-                        if (reactionWait <= 0)
-                            Hit(game, gameTime, enemy);
-
-                    }
-                }
-            }
-            reactionWait -= (float)gameTime.ElapsedGameTime.TotalSeconds;
-            return false;
-        }
-    }
-    class WaterAOE : Spell
-    {
-        public float lifetime { get; set; }
-        float reactionWait = 0;
-        public WaterAOE(Vector2 _position, Vector2 _direction, float _speed, bool _isEnemy, float _damage) : base(_position, _direction, _speed, _isEnemy)
-        {
-            this.position = _position;
-            this.direction = _direction;
-            this.speed = _speed;
-            this.isEnemy = _isEnemy;
-            this.lifetime = 3;
-            myElement = element.water;
-            this.damage = _damage;
-        }
-
-        public WaterAOE(Vector2 _position, Vector2 _direction, float _speed, bool _isEnemy, float _damage, float _lifetime) : base(_position, _direction, _speed, _isEnemy)
-        {
-            this.position = _position;
-            this.direction = _direction;
-            this.speed = _speed;
-            this.isEnemy = _isEnemy;
-            this.lifetime = _lifetime;
-            myElement = element.water;
-            this.damage = _damage;
-        }
-        public override void Instantiate(Game1 game)
-        {
-            spellTexture = game.Content.Load<Texture2D>("sprites/Characters/water_ball");
-        }
-
-        public override bool Update(Game1 game, GameTime gameTime)
-        {
-            lifetime -= (float)gameTime.ElapsedGameTime.TotalSeconds;
-            if (lifetime <= 0) return true;
-
-            if (!isEnemy)
-            {
-                foreach (GameObject enemy in game.enemyList)
-                {
-                    if (game.CircleCollision(position, 18, enemy.position, game.playerRadius))
-                    {
-                        enemy.health -= (1 + damage) * (float)gameTime.ElapsedGameTime.TotalSeconds;
-                        if (reactionWait <= 0)
-                            Hit(game, gameTime, enemy);
-                        Wet newWet = new Wet(3, 0);
-
-                        if (!newWet.Instantiate(enemy))
-                        {
-                            enemy.effects.Add(newWet);
-                        }
-
-                    }
-                }
-            }
-            reactionWait -= (float)gameTime.ElapsedGameTime.TotalSeconds;
-            return false;
-        }
-    }
-    
-    #endregion
-
-
-    #region Zones
-    class FireZone : Spell
-    {
         
-        public List<FireAOE> FireAOEList = new List<FireAOE>();
-        public FireZone(Vector2 _position, Vector2 _direction, float _speed, bool _isEnemy) : base(_position, _direction, _speed, _isEnemy)
+    }
+    class ShockBolt : Spell
+    {
+        public ShockBolt(Vector2 _position, Vector2 _direction, float _speed, bool _isEnemy) : base(_position, _direction, _speed, _isEnemy)
         {
             this.position = _position;
             this.direction = _direction;
             this.speed = _speed;
             this.isEnemy = _isEnemy;
-            cooldown = 5;
-            myElement = element.fire;
+            myElement = element.electro;
+            this.removeAfterReaction = true;
         }
 
         public override void Instantiate(Game1 game)
         {
-            base.Instantiate(game);
-            for (int y = 0; y <= 3; y++)
-            {
-                for (int x = -2; x <= 2; x++)
-                {
-                    Vector2 rightDirection = new Vector2(-direction.Y, direction.X);
-
-                    Vector2 aoeposition = ((direction * y) * 18) + ((rightDirection * x) * 18);
-
-                    FireAOE newSpellCast = new FireAOE(position + aoeposition, -direction, 300, false, damage);
-                    newSpellCast.Instantiate(game);
-                    FireAOEList.Add(newSpellCast);
-                }
-            }
-        }
-
-        public override void Draw(Game1 game, SpriteBatch _spriteBatch, GameTime gameTime)
-        {
-            foreach (FireAOE bullet in FireAOEList)
-            {
-                bullet.Draw(game, _spriteBatch, gameTime);
-            }
+            spellTexture = game.Content.Load<Texture2D>("sprites/Characters/yellow_hand");
         }
 
         public override bool Update(Game1 game, GameTime gameTime)
         {
-            FireAOE removed = null;
-
-            foreach (FireAOE fireAOE in FireAOEList)
+            if (!isEnemy)
             {
-                if (fireAOE.Update(game, gameTime)) removed = fireAOE;
+                foreach (GameObject enemy in game.enemyList)
+                {
+                    if (game.CircleCollision(position, hitbox, enemy.position, game.playerRadius))
+                    {
+                        enemy.Hit(game, 5 + damage);
+                        Hit(game, gameTime, enemy, 5 + damage);
+                        return true;
+                    }
+                }
             }
-            if (removed != null) FireAOEList.Remove(removed);
-            if (FireAOEList.Count == 0) return true;
+            return base.Update(game, gameTime);
 
-            return false;
         }
     }
-    class ToxicZone : Spell
+    class AquaJet : Spell
     {
-
-        public List<ToxicAOE> FireAOEList = new List<ToxicAOE>();
-        public ToxicZone(Vector2 _position, Vector2 _direction, float _speed, bool _isEnemy) : base(_position, _direction, _speed, _isEnemy)
+        public AquaJet(Vector2 _position, Vector2 _direction, float _speed, bool _isEnemy) : base(_position, _direction, _speed, _isEnemy)
         {
             this.position = _position;
             this.direction = _direction;
             this.speed = _speed;
             this.isEnemy = _isEnemy;
-            cooldown = 5;
+            myElement = element.water;
+        }
+
+        public override void Instantiate(Game1 game)
+        {
+            spellTexture = game.Content.Load<Texture2D>("sprites/Characters/water_ball");
+        }
+
+        public override bool Update(Game1 game, GameTime gameTime)
+        {
+            if (!isEnemy)
+            {
+                foreach (GameObject enemy in game.enemyList)
+                {
+                    if (game.CircleCollision(position, hitbox, enemy.position, game.playerRadius))
+                    {
+                        enemy.Hit(game, 5 + damage);
+                        Hit(game, gameTime, enemy, 5 + damage);
+                        return true;
+                    }
+                }
+            }
+            foreach (Spell spell in game.interactableSpells)
+            {
+                if (game.CircleCollision(position, hitbox, spell.position, spell.hitbox))
+                {
+                    if (HitSpell(game, gameTime, spell)) return true;
+                }
+            }
+            return base.Update(game, gameTime);
+
+        }
+    }
+    class AirBlast : Spell
+    {
+        public AirBlast(Vector2 _position, Vector2 _direction, float _speed, bool _isEnemy) : base(_position, _direction, _speed, _isEnemy)
+        {
+            this.position = _position;
+            this.direction = _direction;
+            this.speed = _speed;
+            this.isEnemy = _isEnemy;
+            myElement = element.wind;
+        }
+
+        public override void Instantiate(Game1 game)
+        {
+            spellTexture = game.Content.Load<Texture2D>("sprites/Characters/wind_ball");
+        }
+
+        public override bool Update(Game1 game, GameTime gameTime)
+        {
+            if (!isEnemy)
+            {
+                foreach (GameObject enemy in game.enemyList)
+                {
+                    if (game.CircleCollision(position, hitbox, enemy.position, game.playerRadius))
+                    {
+                        enemy.Hit(game, 5 + damage);
+                        Hit(game, gameTime, enemy, 5 + damage);
+                        return true;
+                    }
+                }
+            }
+            foreach (Spell spell in game.interactableSpells)
+            {
+                if (game.CircleCollision(position, hitbox, spell.position, spell.hitbox))
+                {
+                    if (HitSpell(game, gameTime, spell)) return true;
+                }
+            }
+            return base.Update(game, gameTime);
+
+        }
+    }
+    class VineSnare : Spell
+    {
+        public VineSnare(Vector2 _position, Vector2 _direction, float _speed, bool _isEnemy) : base(_position, _direction, _speed, _isEnemy)
+        {
+            this.position = _position;
+            this.direction = _direction;
+            this.speed = _speed;
+            this.isEnemy = _isEnemy;
+            myElement = element.nature;
+        }
+
+        public override void Instantiate(Game1 game)
+        {
+            spellTexture = game.Content.Load<Texture2D>("sprites/Characters/grass_ball");
+        }
+
+        public override bool Update(Game1 game, GameTime gameTime)
+        {
+            if (!isEnemy)
+            {
+                foreach (GameObject enemy in game.enemyList)
+                {
+                    if (game.CircleCollision(position, hitbox, enemy.position, game.playerRadius))
+                    {
+                        enemy.Hit(game, 5 + damage);
+                        Hit(game, gameTime, enemy, 5 + damage);
+                        return true;
+                    }
+                }
+            }
+            foreach (Spell spell in game.interactableSpells)
+            {
+                if (game.CircleCollision(position, hitbox, spell.position, spell.hitbox))
+                {
+                    if (HitSpell(game, gameTime, spell)) return true;
+                }
+            }
+            return base.Update(game, gameTime);
+
+        }
+    }
+    class EarthSpike : Spell
+    {
+        public EarthSpike(Vector2 _position, Vector2 _direction, float _speed, bool _isEnemy) : base(_position, _direction, _speed, _isEnemy)
+        {
+            this.position = _position;
+            this.direction = _direction;
+            this.speed = _speed;
+            this.isEnemy = _isEnemy;
+            myElement = element.ground;
+        }
+
+        public override void Instantiate(Game1 game)
+        {
+            spellTexture = game.Content.Load<Texture2D>("sprites/Characters/ground_ball");
+        }
+
+        public override bool Update(Game1 game, GameTime gameTime)
+        {
+            if (!isEnemy)
+            {
+                foreach (GameObject enemy in game.enemyList)
+                {
+                    if (game.CircleCollision(position, hitbox, enemy.position, game.playerRadius))
+                    {
+                        enemy.Hit(game, 5 + damage);
+                        Hit(game, gameTime, enemy, 5 + damage);
+                        return true;
+                    }
+                }
+            }
+            foreach (Spell spell in game.interactableSpells)
+            {
+                if (game.CircleCollision(position, hitbox, spell.position, spell.hitbox))
+                {
+                    if (HitSpell(game, gameTime, spell)) return true;
+                }
+            }
+            return base.Update(game, gameTime);
+
+        }
+    }
+    class ShadowBolt : Spell
+    {
+        public ShadowBolt(Vector2 _position, Vector2 _direction, float _speed, bool _isEnemy) : base(_position, _direction, _speed, _isEnemy)
+        {
+            this.position = _position;
+            this.direction = _direction;
+            this.speed = _speed;
+            this.isEnemy = _isEnemy;
+            myElement = element.dark;
+        }
+
+        public override void Instantiate(Game1 game)
+        {
+            spellTexture = game.Content.Load<Texture2D>("sprites/Characters/dark_ball");
+        }
+
+        public override bool Update(Game1 game, GameTime gameTime)
+        {
+            
+            if (!isEnemy)
+            {
+                foreach (GameObject enemy in game.enemyList)
+                {
+                    if (game.CircleCollision(position, hitbox, enemy.position, game.playerRadius))
+                    {
+                        enemy.Hit(game, 5 + damage);
+                        Hit(game, gameTime, enemy, 5 + damage);
+                        return true;
+                    }
+                }
+            }
+            foreach (Spell spell in game.interactableSpells)
+            {
+                if (game.CircleCollision(position, hitbox, spell.position, spell.hitbox))
+                {
+                    if (HitSpell(game, gameTime, spell)) return true;
+                }
+            }
+            return base.Update(game, gameTime);
+
+        }
+    }
+    #endregion
+
+    #region SubSpells
+    class WaterWaveParticle : Spell
+    {
+        public float lifetime { get; set; }
+        public WaterWaveParticle(Vector2 _position, Vector2 _direction, float _speed, bool _isEnemy) : base(_position, _direction, _speed, _isEnemy)
+        {
+            this.position = _position;
+            this.direction = _direction;
+            this.speed = _speed;
+            this.isEnemy = _isEnemy;
+            this.lifetime = 1.5f;
+            myElement = element.water;
+            this.damage = 0;
+            this.hitbox = 18;
+        }
+
+        public WaterWaveParticle(Vector2 _position, Vector2 _direction, float _speed, bool _isEnemy, float _lifetime) : base(_position, _direction, _speed, _isEnemy)
+        {
+            this.position = _position;
+            this.direction = _direction;
+            this.speed = _speed;
+            this.isEnemy = _isEnemy;
+            this.lifetime = _lifetime;
+            myElement = element.water;
+            this.damage = 0;
+            this.hitbox = 18;
+        }
+
+        public override void Instantiate(Game1 game)
+        {
+            spellTexture = game.Content.Load<Texture2D>("sprites/Characters/water_ball");
+        }
+
+        public override bool Update(Game1 game, GameTime gameTime)
+        {
+            lifetime -= (float)gameTime.ElapsedGameTime.TotalSeconds;
+            if (lifetime <= 0) return true;
+
+            if (!isEnemy)
+            {
+                foreach (GameObject enemy in game.enemyList)
+                {
+                    if (game.CircleCollision(position, hitbox, enemy.position, game.playerRadius))
+                    {
+                        enemy.Hit(game, (5 + damage) * (float)gameTime.ElapsedGameTime.TotalSeconds);
+                        enemy.position += direction * speed * (float)gameTime.ElapsedGameTime.TotalSeconds;
+                        Hit(game, gameTime, enemy, (5 + damage) * (float)gameTime.ElapsedGameTime.TotalSeconds);
+                    }
+                }
+            }
+            return false;
+        }
+    }
+
+    class VineWallParticle : Spell
+    {
+        public float lifetime { get; set; }
+        public VineWallParticle(Vector2 _position, Vector2 _direction, float _speed, bool _isEnemy) : base(_position, _direction, _speed, _isEnemy)
+        {
+            this.position = _position;
+            this.direction = _direction;
+            this.speed = _speed;
+            this.isEnemy = _isEnemy;
+            this.lifetime = 2.5f;
+            myElement = element.nature;
+            this.damage = 0;
+            this.hitbox = 18;
+        }
+
+        public VineWallParticle(Vector2 _position, Vector2 _direction, float _speed, bool _isEnemy, float _lifetime) : base(_position, _direction, _speed, _isEnemy)
+        {
+            this.position = _position;
+            this.direction = _direction;
+            this.speed = _speed;
+            this.isEnemy = _isEnemy;
+            this.lifetime = _lifetime;
+            myElement = element.nature;
+            this.damage = 0;
+            this.hitbox = 18;
+        }
+
+        public override void Instantiate(Game1 game)
+        {
+            spellTexture = game.Content.Load<Texture2D>("sprites/Characters/bloom_ball");
+        }
+
+        public override bool Update(Game1 game, GameTime gameTime)
+        {
+            lifetime -= (float)gameTime.ElapsedGameTime.TotalSeconds;
+            if (lifetime <= 0) return true;
+
+            if (!isEnemy)
+            {
+                foreach (GameObject enemy in game.enemyList)
+                {
+                    if (game.CircleCollision(position, hitbox, enemy.position, game.playerRadius))
+                    {
+                        enemy.Hit(game, (5 + damage) * (float)gameTime.ElapsedGameTime.TotalSeconds);
+                        Vector2 enemydirection = enemy.target - enemy.position;
+                        enemydirection.Normalize();
+                        enemy.position -= enemydirection * (enemy.speed * 1.2f) * (float)gameTime.ElapsedGameTime.TotalSeconds;
+                        Hit(game, gameTime, enemy, (5 + damage) * (float)gameTime.ElapsedGameTime.TotalSeconds);
+                    }
+                }
+            }
+            return false;
+        }
+    }
+
+    class Darkness : Spell
+    {
+        public float lifetime { get; set; }
+        public Darkness(Vector2 _position, Vector2 _direction, float _speed, bool _isEnemy) : base(_position, _direction, _speed, _isEnemy)
+        {
+            this.position = _position;
+            this.direction = _direction;
+            this.speed = _speed;
+            this.isEnemy = _isEnemy;
+            this.lifetime = 1f;
+            myElement = element.dark;
+            this.damage = 0;
+            this.hitbox = 64;
+        }
+
+        public Darkness(Vector2 _position, Vector2 _direction, float _speed, bool _isEnemy, float _lifetime) : base(_position, _direction, _speed, _isEnemy)
+        {
+            this.position = _position;
+            this.direction = _direction;
+            this.speed = _speed;
+            this.isEnemy = _isEnemy;
+            this.lifetime = _lifetime;
+            myElement = element.dark;
+            this.damage = 0;
+            this.hitbox = 64;
+        }
+
+        public override void Instantiate(Game1 game)
+        {
+            spellTexture = game.Content.Load<Texture2D>("sprites/Characters/Darkness");
+        }
+
+        public override bool Update(Game1 game, GameTime gameTime)
+        {
+            lifetime -= (float)gameTime.ElapsedGameTime.TotalSeconds;
+            if (lifetime <= 0) return true;
+
+            if (!isEnemy)
+            {
+                foreach (GameObject enemy in game.enemyList)
+                {
+                    if (game.CircleCollision(position, hitbox, enemy.position, game.playerRadius))
+                    {
+                        //enemy.health -= (5 + damage) * (float)gameTime.ElapsedGameTime.TotalSeconds;
+                        Weakened newStatus = new Weakened(3, 0);
+
+                        if (!newStatus.Instantiate(enemy))
+                        {
+                            enemy.effects.Add(newStatus);
+                        }
+                        Hit(game, gameTime, enemy, 0);
+
+                    }
+                }
+            }
+            return false;
+        }
+    }
+
+    #endregion
+
+    #region TransformedSpells
+
+    class InfernoOrb : Spell
+    {
+        public InfernoOrb(Vector2 _position, Vector2 _direction, float _speed, bool _isEnemy) : base(_position, _direction, _speed, _isEnemy)
+        {
+            this.position = _position;
+            this.direction = _direction;
+            this.speed = _speed;
+            this.isEnemy = _isEnemy;
+            this.cooldown = 3;
+            myElement = element.fire;
+        }
+
+        public override bool Update(Game1 game, GameTime gameTime)
+        {
+            if (!isEnemy)
+            {
+                foreach (GameObject enemy in game.enemyList)
+                {
+                    if (game.CircleCollision(position, hitbox, enemy.position, game.playerRadius))
+                    {
+                        enemy.Hit(game, 10 + damage);
+                        Hit(game, gameTime, enemy, 10 + damage);
+                        List<GameObject> closeEnemies = new List<GameObject>();
+                        float range = 516;
+                        foreach (GameObject enemy2 in game.enemyList)
+                        {
+                            if (Vector2.Distance(enemy.position, enemy2.position) < range)
+                                closeEnemies.Add(enemy2);
+                        }
+                        int ballsLeft = 3;
+                        foreach (GameObject enemy2 in closeEnemies)
+                        {
+                            if (ballsLeft <= 0) break;
+                            Vector2 direction = enemy.position - enemy2.position;
+                            direction.Normalize();
+                            FireBall newSpellCast = new FireBall(enemy.position - (direction * (game.playerRadius * 2f)), -direction, 300, false);
+                            newSpellCast.Instantiate(game);
+                            newSpellCast.damage = damage;
+                            game.spellsToSpawn.Add(newSpellCast);
+                            ballsLeft--;
+                        }
+                        return true;
+                    }
+                }
+            }
+            return base.Update(game, gameTime);
+
+        }
+    }
+    class ToxicBarrage : Spell
+    {
+        public ToxicBarrage(Vector2 _position, Vector2 _direction, float _speed, bool _isEnemy) : base(_position, _direction, _speed, _isEnemy)
+        {
+            this.position = _position;
+            this.direction = _direction;
+            this.speed = _speed;
+            this.isEnemy = _isEnemy;
+            this.cooldown = 3;
             myElement = element.toxic;
         }
 
         public override void Instantiate(Game1 game)
         {
-            base.Instantiate(game);
-            for (int y = 0; y <= 2; y++)
+            spellTexture = game.Content.Load<Texture2D>("sprites/Characters/green_hand");
+            float angle1 = 10;
+            float angle2 = 350;
+            for (int i = -1; i <= 1; i++)
             {
-                for (int x = -1; x <= 1; x++)
-                {
-                    Vector2 rightDirection = new Vector2(-direction.Y, direction.X);
-
-                    Vector2 aoeposition = ((direction * y) * 18) + ((rightDirection * x) * 18);
-
-                    ToxicAOE newSpellCast = new ToxicAOE(position + aoeposition, -direction, 300, false, damage);
-                    newSpellCast.Instantiate(game);
-                    FireAOEList.Add(newSpellCast);
-                }
-            }
-        }
-
-        public override void Draw(Game1 game, SpriteBatch _spriteBatch, GameTime gameTime)
-        {
-            foreach (ToxicAOE bullet in FireAOEList)
-            {
-                bullet.Draw(game, _spriteBatch, gameTime);
+                //if (i == 0) continue;
+                Vector2 direction = (position - Mouse.GetState().Position.ToVector2()) + Vector2.UnitX * game.offsetX;
+                direction.Normalize();
+                Vector2 rightDirection = new Vector2(direction.Y, -direction.X);
+                Vector2 newDirection = (position - Mouse.GetState().Position.ToVector2()) + Vector2.UnitX * game.offsetX + (rightDirection * (32 * i));
+                newDirection.Normalize();
+                VenomDart newSpellCast = new VenomDart(position - (newDirection), -newDirection, 300, false);
+                newSpellCast.Instantiate(game);
+                newSpellCast.damage = damage;
+                game.spellsToSpawn.Add(newSpellCast);
             }
         }
 
         public override bool Update(Game1 game, GameTime gameTime)
         {
-            ToxicAOE removed = null;
-
-            foreach (ToxicAOE fireAOE in FireAOEList)
+            if (!isEnemy)
             {
-                if (fireAOE.Update(game, gameTime)) removed = fireAOE;
+                foreach (GameObject enemy in game.enemyList)
+                {
+                    if (game.CircleCollision(position, hitbox, enemy.position, game.playerRadius))
+                    {
+                        enemy.Hit(game, 5 + damage);
+                        Hit(game, gameTime, enemy, 5 + damage);
+                        return true;
+                    }
+                }
             }
-            if (removed != null) FireAOEList.Remove(removed);
-            if (FireAOEList.Count == 0) return true;
-            return false;
+            return base.Update(game, gameTime);
+
         }
     }
-    class IceZone : Spell
+    class GlacialBurst : Spell
     {
-
-        public List<IceAOE> FireAOEList = new List<IceAOE>();
-        public IceZone(Vector2 _position, Vector2 _direction, float _speed, bool _isEnemy) : base(_position, _direction, _speed, _isEnemy)
+        public GlacialBurst(Vector2 _position, Vector2 _direction, float _speed, bool _isEnemy) : base(_position, _direction, _speed, _isEnemy)
         {
             this.position = _position;
             this.direction = _direction;
             this.speed = _speed;
             this.isEnemy = _isEnemy;
-            cooldown = 5;
+            this.cooldown = 3;
             myElement = element.ice;
         }
-
         public override void Instantiate(Game1 game)
         {
-            base.Instantiate(game);
-            for (int y = 0; y <= 2; y++)
-            {
-                for (int x = -1; x <= 1; x++)
-                {
-                    Vector2 rightDirection = new Vector2(-direction.Y, direction.X);
-
-                    Vector2 aoeposition = ((direction * y) * 18) + ((rightDirection * x) * 18);
-
-                    IceAOE newSpellCast = new IceAOE(position + aoeposition, -direction, 300, false, 0);
-                    newSpellCast.Instantiate(game);
-                    FireAOEList.Add(newSpellCast);
-                }
-            }
+            spellTexture = game.Content.Load<Texture2D>("sprites/Characters/ice_ball");
         }
-
-        public override void Draw(Game1 game, SpriteBatch _spriteBatch, GameTime gameTime)
-        {
-            foreach (IceAOE bullet in FireAOEList)
-            {
-                bullet.Draw(game, _spriteBatch, gameTime);
-            }
-        }
-
         public override bool Update(Game1 game, GameTime gameTime)
         {
-            IceAOE removed = null;
-
-            foreach (IceAOE fireAOE in FireAOEList)
+            if (!isEnemy)
             {
-                if (fireAOE.Update(game, gameTime)) removed = fireAOE;
+                foreach (GameObject enemy in game.enemyList)
+                {
+                    if (game.CircleCollision(position, hitbox, enemy.position, game.playerRadius))
+                    {
+                        enemy.Hit(game, 10 + damage);
+                        Hit(game, gameTime, enemy, 10 + damage);
+                        Stun newStatus = new Stun(3, 0);
+
+                        if (!newStatus.Instantiate(enemy))
+                        {
+                            enemy.effects.Add(newStatus);
+                        }
+                        List<GameObject> closeEnemies = new List<GameObject>();
+                        float range = 516;
+                        foreach (GameObject enemy2 in game.enemyList)
+                        {
+                            if (Vector2.Distance(enemy.position, enemy2.position) < range)
+                                closeEnemies.Add(enemy2);
+                        }
+                        int ballsLeft = 3;
+                        foreach (GameObject enemy2 in closeEnemies)
+                        {
+                            if (ballsLeft <= 0) break;
+                            Vector2 direction = enemy.position - enemy2.position;
+                            direction.Normalize();
+                            FreezeBall newSpellCast = new FreezeBall(enemy.position - (direction * (game.playerRadius * 2f)), -direction, 300, false);
+                            newSpellCast.Instantiate(game);
+                            newSpellCast.damage = damage;
+                            game.spellsToSpawn.Add(newSpellCast);
+                            ballsLeft--;
+                        }
+                        return true;
+                    }
+                }
             }
-            if (removed != null) FireAOEList.Remove(removed);
-            if (FireAOEList.Count == 0) return true;
-            return false;
+            return base.Update(game, gameTime);
+
         }
     }
-    class ElectroZone : Spell
+    class Thunderstrike : Spell
     {
-
-        public List<ElectroAOE> FireAOEList = new List<ElectroAOE>();
-        public ElectroZone(Vector2 _position, Vector2 _direction, float _speed, bool _isEnemy) : base(_position, _direction, _speed, _isEnemy)
+        public Thunderstrike(Vector2 _position, Vector2 _direction, float _speed, bool _isEnemy) : base(_position, _direction, _speed, _isEnemy)
         {
             this.position = _position;
             this.direction = _direction;
             this.speed = _speed;
             this.isEnemy = _isEnemy;
-            cooldown = 5;
+            this.cooldown = 3;
             myElement = element.electro;
+        }
+        public override void Instantiate(Game1 game)
+        {
+            spellTexture = game.Content.Load<Texture2D>("sprites/Characters/yellow_hand");
+        }
+        public override bool Update(Game1 game, GameTime gameTime)
+        {
+            if (damage < -3) damage = -3;
+            if (!isEnemy)
+            {
+                foreach (GameObject enemy in game.enemyList)
+                {
+                    if (game.CircleCollision(position, hitbox, enemy.position, game.playerRadius))
+                    {
+                        enemy.Hit(game, 3 + damage);
+                        Hit(game, gameTime, enemy, 3 + damage);
+                        GameObject closeEnemy = null;
+                        float range = float.PositiveInfinity;
+                        foreach (GameObject enemy2 in game.enemyList)
+                        {
+                            if (enemy2 == enemy) continue;
+                            if (Vector2.Distance(enemy.position, enemy2.position) < range)
+                                closeEnemy = enemy2;
+                        }
+
+                        if (closeEnemy != null)
+                        {
+                            Vector2 newDirection = enemy.position - closeEnemy.position;
+                            newDirection.Normalize();
+                            Thunderstrike newSpellCast = new Thunderstrike(enemy.position - (newDirection * (game.playerRadius * 2f)), -newDirection, 600, false);
+                            newSpellCast.Instantiate(game);
+                            newSpellCast.damage = damage-1;
+                            game.spellsToSpawn.Add(newSpellCast);
+                        }
+                        return true;
+                    }
+                }
+            }
+            return base.Update(game, gameTime);
+
+        }
+    }
+
+    class TorrentialWave : Spell
+    {
+
+        public List<WaterWaveParticle> FireAOEList = new List<WaterWaveParticle>();
+        public TorrentialWave(Vector2 _position, Vector2 _direction, float _speed, bool _isEnemy) : base(_position, _direction, _speed, _isEnemy)
+        {
+            this.position = _position;
+            this.direction = _direction;
+            this.speed = _speed / 2.5f;
+            this.isEnemy = _isEnemy;
+            cooldown = 3;
+            myElement = element.water;
         }
 
         public override void Instantiate(Game1 game)
         {
             base.Instantiate(game);
-            for (int y = 0; y <= 2; y++)
+            for (int y = 0; y < 2; y++)
             {
                 for (int x = -1; x <= 1; x++)
                 {
@@ -875,7 +1665,7 @@ namespace WizardRogueLike
 
                     Vector2 aoeposition = ((direction * y) * 18) + ((rightDirection * x) * 18);
 
-                    ElectroAOE newSpellCast = new ElectroAOE(position + aoeposition, -direction, 300, false, 0);
+                    WaterWaveParticle newSpellCast = new WaterWaveParticle(position + aoeposition, direction, speed / 8f, false);
                     newSpellCast.Instantiate(game);
                     FireAOEList.Add(newSpellCast);
                 }
@@ -884,7 +1674,7 @@ namespace WizardRogueLike
 
         public override void Draw(Game1 game, SpriteBatch _spriteBatch, GameTime gameTime)
         {
-            foreach (ElectroAOE bullet in FireAOEList)
+            foreach (WaterWaveParticle bullet in FireAOEList)
             {
                 bullet.Draw(game, _spriteBatch, gameTime);
             }
@@ -892,10 +1682,11 @@ namespace WizardRogueLike
 
         public override bool Update(Game1 game, GameTime gameTime)
         {
-            ElectroAOE removed = null;
+            WaterWaveParticle removed = null;
 
-            foreach (ElectroAOE fireAOE in FireAOEList)
+            foreach (WaterWaveParticle fireAOE in FireAOEList)
             {
+                fireAOE.position += direction * speed * (float)gameTime.ElapsedGameTime.TotalSeconds;
                 if (fireAOE.Update(game, gameTime)) removed = fireAOE;
             }
             if (removed != null) FireAOEList.Remove(removed);
@@ -903,85 +1694,93 @@ namespace WizardRogueLike
             return false;
         }
     }
-    class WaterZone : Spell
-    {
 
-        public List<WaterAOE> FireAOEList = new List<WaterAOE>();
-        public WaterZone(Vector2 _position, Vector2 _direction, float _speed, bool _isEnemy) : base(_position, _direction, _speed, _isEnemy)
+    class CycloneWhirl : Spell
+    {
+        public float lifetime { get; set; }
+        public float pullForce = 128;
+        public CycloneWhirl(Vector2 _position, Vector2 _direction, float _speed, bool _isEnemy) : base(_position, _direction, _speed, _isEnemy)
         {
             this.position = _position;
             this.direction = _direction;
-            this.speed = _speed;
+            this.speed = _speed / 3;
             this.isEnemy = _isEnemy;
-            cooldown = 5;
-            myElement = element.electro;
+            this.lifetime = 1f;
+            myElement = element.wind;
+            this.damage = 0;
+            this.hitbox = 32;
+        }
+
+        public CycloneWhirl(Vector2 _position, Vector2 _direction, float _speed, bool _isEnemy, float _lifetime) : base(_position, _direction, _speed, _isEnemy)
+        {
+            this.position = _position;
+            this.direction = _direction;
+            this.speed = _speed / 3;
+            this.isEnemy = _isEnemy;
+            this.lifetime = _lifetime;
+            myElement = element.wind;
+            this.damage = 0;
+            this.hitbox = 32;
         }
 
         public override void Instantiate(Game1 game)
         {
-            base.Instantiate(game);
-            for (int y = 0; y <= 2; y++)
+            spellTexture = game.Content.Load<Texture2D>("sprites/Characters/Tornado");
+        }
+
+        public override bool Update(Game1 game, GameTime gameTime)
+        {
+            lifetime -= (float)gameTime.ElapsedGameTime.TotalSeconds;
+            if (lifetime <= 0) return true;
+
+            position += direction * speed * (float)gameTime.ElapsedGameTime.TotalSeconds;
+
+            if (!isEnemy)
             {
-                for (int x = -1; x <= 1; x++)
+                foreach (GameObject enemy in game.enemyList)
                 {
-                    Vector2 rightDirection = new Vector2(-direction.Y, direction.X);
-
-                    Vector2 aoeposition = ((direction * y) * 18) + ((rightDirection * x) * 18);
-
-                    WaterAOE newSpellCast = new WaterAOE(position + aoeposition, -direction, 300, false, damage);
-                    newSpellCast.Instantiate(game);
-                    FireAOEList.Add(newSpellCast);
+                    if (game.CircleOnBox(enemy.position, game.playerRadius, position, spellTexture.Bounds.Size.ToVector2()))
+                    {
+                        enemy.Hit(game, (10 + damage) * (float)gameTime.ElapsedGameTime.TotalSeconds);
+                        Hit(game, gameTime, enemy, (10 + damage) * (float)gameTime.ElapsedGameTime.TotalSeconds);
+                        Vector2 direction = (position + Vector2.One * (hitbox / 2)) - enemy.position;
+                        direction.Normalize();
+                        enemy.position += direction * pullForce * (float)gameTime.ElapsedGameTime.TotalSeconds;
+                    }
                 }
             }
-        }
-
-        public override void Draw(Game1 game, SpriteBatch _spriteBatch, GameTime gameTime)
-        {
-            foreach (WaterAOE bullet in FireAOEList)
-            {
-                bullet.Draw(game, _spriteBatch, gameTime);
-            }
-        }
-
-        public override bool Update(Game1 game, GameTime gameTime)
-        {
-            WaterAOE removed = null;
-
-            foreach (WaterAOE fireAOE in FireAOEList)
-            {
-                if (fireAOE.Update(game, gameTime)) removed = fireAOE;
-            }
-            if (removed != null) FireAOEList.Remove(removed);
-            if (FireAOEList.Count == 0) return true;
             return false;
         }
     }
-    class WaterWave : Spell
+
+    class ThornedGrove : Spell
     {
 
-        public List<WaterAOE> FireAOEList = new List<WaterAOE>();
-        public WaterWave(Vector2 _position, Vector2 _direction, float _speed, bool _isEnemy) : base(_position, _direction, _speed, _isEnemy)
+        public List<VineWallParticle> FireAOEList = new List<VineWallParticle>();
+        public ThornedGrove(Vector2 _position, Vector2 _direction, float _speed, bool _isEnemy) : base(_position, _direction, _speed, _isEnemy)
         {
             this.position = _position;
             this.direction = _direction;
-            this.speed = _speed / 2;
+            this.speed = _speed / 2.5f;
             this.isEnemy = _isEnemy;
-            cooldown = 5;
-            myElement = element.electro;
+            cooldown = 3;
+            myElement = element.nature;
         }
 
         public override void Instantiate(Game1 game)
         {
+            position += direction * 64;
             base.Instantiate(game);
-            for (int y = 0; y <= 1; y++)
+            for (int y = 0; y < 1; y++)
             {
                 for (int x = -2; x <= 2; x++)
                 {
+                    
                     Vector2 rightDirection = new Vector2(-direction.Y, direction.X);
 
                     Vector2 aoeposition = ((direction * y) * 18) + ((rightDirection * x) * 18);
 
-                    WaterAOE newSpellCast = new WaterAOE(position + aoeposition, -direction, 300, false, damage, 1);
+                    VineWallParticle newSpellCast = new VineWallParticle(position + aoeposition, direction, speed / 8f, false);
                     newSpellCast.Instantiate(game);
                     FireAOEList.Add(newSpellCast);
                 }
@@ -990,7 +1789,7 @@ namespace WizardRogueLike
 
         public override void Draw(Game1 game, SpriteBatch _spriteBatch, GameTime gameTime)
         {
-            foreach (WaterAOE bullet in FireAOEList)
+            foreach (VineWallParticle bullet in FireAOEList)
             {
                 bullet.Draw(game, _spriteBatch, gameTime);
             }
@@ -998,29 +1797,128 @@ namespace WizardRogueLike
 
         public override bool Update(Game1 game, GameTime gameTime)
         {
-            WaterAOE removed = null;
+            VineWallParticle removed = null;
 
-            List<Vector2> oldPositions = new List<Vector2>();
-
-            foreach (WaterAOE fireAOE in FireAOEList)
+            foreach (VineWallParticle fireAOE in FireAOEList)
             {
-                Vector2 oldPosition = fireAOE.position - position;
-                oldPositions.Add(oldPosition);
+                //fireAOE.position += direction * speed * (float)gameTime.ElapsedGameTime.TotalSeconds;
                 if (fireAOE.Update(game, gameTime)) removed = fireAOE;
-            }
-            position += direction * speed * (float)gameTime.ElapsedGameTime.TotalSeconds;
-            
-            int index = 0;
-            foreach (WaterAOE fireAOE in FireAOEList)
-            {
-                fireAOE.position = oldPositions[index] + position;
-                index++;
             }
             if (removed != null) FireAOEList.Remove(removed);
             if (FireAOEList.Count == 0) return true;
             return false;
         }
     }
+    class QuakeTremor : Spell
+    {
+        public float lifetime { get; set; }
+        Vector2 baseposition;
+        public QuakeTremor(Vector2 _position, Vector2 _direction, float _speed, bool _isEnemy) : base(_position, _direction, _speed, _isEnemy)
+        {
+            this.position = _position;
+            this.direction = _direction;
+            this.speed = _speed;
+            this.isEnemy = _isEnemy;
+            this.lifetime = 1;
+            this.cooldown = 3;
+            myElement = element.ground;
+            this.damage = 0;
+            this.hitbox = 128;
+        }
+
+        public QuakeTremor(Vector2 _position, Vector2 _direction, float _speed, bool _isEnemy, float _lifetime) : base(_position, _direction, _speed, _isEnemy)
+        {
+            this.position = _position;
+            this.direction = _direction;
+            this.speed = _speed;
+            this.isEnemy = _isEnemy;
+            this.lifetime = _lifetime;
+            this.cooldown = 3;
+            myElement = element.ground;
+            this.damage = 0;
+            this.hitbox = 128;
+        }
+
+        public override void Instantiate(Game1 game)
+        {
+            spellTexture = game.Content.Load<Texture2D>("sprites/Characters/Quake");
+            position -= Vector2.One * (hitbox / 3.5f);
+            position += direction * (hitbox / 2);
+            baseposition = position;
+        }
+
+        public override bool Update(Game1 game, GameTime gameTime)
+        {
+            lifetime -= (float)gameTime.ElapsedGameTime.TotalSeconds;
+            if (lifetime <= 0) return true;
+
+            position = baseposition;
+
+            Vector2 randomDirection = position - game.generateRandomPosition();
+            randomDirection.Normalize();
+
+            position += randomDirection * 128 * (float)gameTime.ElapsedGameTime.TotalSeconds;
+
+            if (!isEnemy)
+            {
+                foreach (GameObject enemy in game.enemyList)
+                {
+                    if (game.CircleOnBox(enemy.position, game.playerRadius, position + (Vector2.One * (hitbox / 3.5f)), Vector2.One * hitbox))
+                    {
+                        enemy.Hit(game, (11 + damage) * (float)gameTime.ElapsedGameTime.TotalSeconds);
+                        Stun newStatus = new Stun(2, 0);
+
+                        if (!newStatus.Instantiate(enemy))
+                        {
+                            enemy.effects.Add(newStatus);
+                        }
+                        Hit(game, gameTime, enemy, (11 + damage) * (float)gameTime.ElapsedGameTime.TotalSeconds);
+                    }
+                }
+            }
+            return false;
+        }
+    }
+
+    class VoidEruption : Spell
+    {
+        public VoidEruption(Vector2 _position, Vector2 _direction, float _speed, bool _isEnemy) : base(_position, _direction, _speed, _isEnemy)
+        {
+            this.position = _position;
+            this.direction = _direction;
+            this.speed = _speed;
+            this.isEnemy = _isEnemy;
+            this.cooldown = 3;
+            myElement = element.dark;
+        }
+
+        public override void Instantiate(Game1 game)
+        {
+            spellTexture = game.Content.Load<Texture2D>("sprites/Characters/dark_ball");
+        }
+
+        public override bool Update(Game1 game, GameTime gameTime)
+        {
+            if (!isEnemy)
+            {
+                foreach (GameObject enemy in game.enemyList)
+                {
+                    if (game.CircleCollision(position, hitbox, enemy.position, game.playerRadius))
+                    {
+                        enemy.Hit(game, 10 + damage);
+                        Hit(game, gameTime, enemy, 10 + damage);
+                        Darkness newSpellCast = new Darkness(enemy.position - (direction * (game.playerRadius * 2f)), direction, 300, false);
+                        newSpellCast.Instantiate(game);
+                        game.spellsToSpawn.Add(newSpellCast);
+                        return true;
+                    }
+                }
+            }
+            return base.Update(game, gameTime);
+
+        }
+    }
+
     #endregion
 
     #region Unique
@@ -1063,9 +1961,9 @@ namespace WizardRogueLike
                 {
                     if (game.CircleCollision(summon.position, game.playerRadius, enemy.position, game.playerRadius))
                     {
-                        enemy.health -= (5 + damage) * (float)gameTime.ElapsedGameTime.TotalSeconds;
+                        enemy.Hit(game, (5 + damage) * (float)gameTime.ElapsedGameTime.TotalSeconds);
                         summon.health -= 3.5f * (float)gameTime.ElapsedGameTime.TotalSeconds;
-                        Hit(game, gameTime, enemy);
+                        Hit(game, gameTime, enemy, (5 + damage) * (float)gameTime.ElapsedGameTime.TotalSeconds);
                         
                     }
                     if (Vector2.Distance(position, enemy.position) < closest)
@@ -1102,6 +2000,7 @@ namespace WizardRogueLike
             this.isEnemy = _isEnemy;
             this.cooldown = 5;
             myElement = element.none;
+            this.hitbox = 0;
         }
 
         public override void Draw(Game1 game, SpriteBatch _spriteBatch, GameTime gameTime)
@@ -1123,63 +2022,6 @@ namespace WizardRogueLike
             return true;
         }
     }
-    class FireWorm : Spell
-    {
-        public List<FireAOE> FireAOEList = new List<FireAOE>();
-        public float timeBetweenAOE = 0.2f;
-        int range = 15;
-        public FireWorm(Vector2 _position, Vector2 _direction, float _speed, bool _isEnemy) : base(_position, _direction, _speed, _isEnemy)
-        {
-            this.position = _position;
-            this.direction = _direction;
-            this.speed = _speed;
-            this.isEnemy = _isEnemy;
-            cooldown = 3;
-            myElement = element.fire;
-        }
-
-        public override void Draw(Game1 game, SpriteBatch _spriteBatch, GameTime gameTime)
-        {
-            foreach (FireAOE bullet in FireAOEList)
-            {
-                bullet.Draw(game, _spriteBatch, gameTime);
-            }
-        }
-
-        public override bool Update(Game1 game, GameTime gameTime)
-        {
-            if (position.X > game.areaSize.X || position.Y > game.areaSize.Y || position.X < 0 || position.Y < 0)
-            {
-                if (FireAOEList.Count == 0) return true;
-            }
-            else
-            {
-                if (range > 0)
-                {
-                    timeBetweenAOE -= (float)gameTime.ElapsedGameTime.TotalSeconds;
-                    if (timeBetweenAOE <= 0)
-                    {
-                        FireAOE newSpellCast = new FireAOE(position - (direction * game.staffTexture.Width), -direction, 300, false, damage);
-                        newSpellCast.Instantiate(game);
-                        FireAOEList.Add(newSpellCast);
-
-                        timeBetweenAOE = 0.05f;
-                        range--;
-                    }
-                }
-            }
-            FireAOE removed = null;
-
-            foreach (FireAOE fireAOE in FireAOEList)
-            {
-                if (fireAOE.Update(game, gameTime)) removed = fireAOE;
-            }
-            if (removed != null) FireAOEList.Remove(removed);
-
-            position += direction * speed * (float)gameTime.ElapsedGameTime.TotalSeconds;
-            return false;
-        }
-    }
     public class Turret : Spell
     {
         public float lifetime = 10;
@@ -1194,6 +2036,7 @@ namespace WizardRogueLike
             this.cooldown = 5f;
             myElement = element.dark;
             this.damage = 5;
+            this.hitbox = 0;
         }
 
         public override void Instantiate(Game1 game)
@@ -1221,6 +2064,7 @@ namespace WizardRogueLike
                 _spriteBatch.Draw(spellTexture, position, Color.White);
         }
     }
+
     #endregion
 
 
@@ -1238,6 +2082,8 @@ namespace WizardRogueLike
         public int currentSpellIndex = 0;
 
         public List<Turret> turrets = new List<Turret>();
+
+        public float reationCooldown = 0;
 
         void SpellInstantiate ()
         {
@@ -1261,18 +2107,26 @@ namespace WizardRogueLike
 
         void BulletUpdate(GameTime gameTime)
         {
-            Spell removed = null;
+            if (reationCooldown > 0) reationCooldown -= (float)gameTime.ElapsedGameTime.TotalSeconds;
+            List<Spell> toRemove = new List<Spell>();
             foreach (Spell bullet in bullets)
             {
-                if (bullet.Update(this, gameTime)) removed = bullet;
+                if (bullet.Update(this, gameTime)) toRemove.Add(bullet);
             }
-            if (removed != null)
+            foreach (Spell removed in toRemove)
             {
-                if(removed.GetType() == typeof(Turret))
+                if (removed != null)
                 {
-                    turrets.Remove((Turret)removed);
+                    if (removed.GetType() == typeof(Turret))
+                    {
+                        turrets.Remove((Turret)removed);
+                    }
+                    if (removed.isInteractable)
+                    {
+                        interactableSpells.Remove(removed);
+                    }
+                    bullets.Remove(removed);
                 }
-                bullets.Remove(removed);
             }
             if (spellsToSpawn.Count > 0)
             {

@@ -18,6 +18,11 @@ namespace WizardRogueLike
         public List<StatusEffect> effects = new List<StatusEffect>();
         public float health = 20;
         public float maxHealth = 20;
+        public float defenseShred = 1;
+        public float damageBonus = 0;
+
+        public Vector2 target;
+        public bool isTargetPlayer = true;
         public GameObject(Vector2 _position, Texture2D _texture, float _speed, float _health)
         {
             this.position = _position;
@@ -30,17 +35,22 @@ namespace WizardRogueLike
 
         public void Draw(Game1 game, SpriteBatch _spriteBatch)
         {
-            Color enemyColor = Color.Black;
-            foreach (StatusEffect effect in effects)
-            {
-                enemyColor = new Color(enemyColor.R + effect.statusColor.R, enemyColor.G + effect.statusColor.G, enemyColor.B + effect.statusColor.B);
-            }
-            if (enemyColor == Color.Black) enemyColor = Color.White;
+            Color enemyColor = Color.White;
+
+            if (effects.Count > 0)
+                enemyColor = effects.Last().statusColor;
+
             _spriteBatch.Draw(texture, position, enemyColor);
 
             Rectangle healthbar = new Rectangle(Point.Zero, new Point((int)(16 * (health / 20)), 8));
 
             _spriteBatch.Draw(game.boxTexture, position - (Vector2.UnitY * (game.playerRadius / 2)) -Vector2.UnitX * (healthbar.Size.X / 2) + Vector2.UnitX * (game.playerRadius * 1.5f), healthbar, Color.Red, 0, Vector2.Zero, 1, SpriteEffects.None, 0);
+        }
+
+        public void Hit(Game1 game, float damage)
+        {
+            health -= damage * defenseShred;
+            foreach (StatusEffect effect in effects) effect.Hit(game, this);
         }
     }
     partial class Game1
@@ -65,15 +75,26 @@ namespace WizardRogueLike
 
             foreach (GameObject obj in enemyList)
             {
+                if (obj.isTargetPlayer) obj.target = playerPosition;
                 if (obj.health <= 0) removed = obj;
-                Vector2 direction = playerPosition - obj.position;
+                Vector2 direction = obj.target - obj.position;
                 direction.Normalize();
-                obj.position += direction * obj.speed * (float)gameTime.ElapsedGameTime.TotalSeconds;
+                Vector2 newPosition = obj.position + direction * obj.speed * (float)gameTime.ElapsedGameTime.TotalSeconds;
+                bool canMove = true;
+                foreach(Spell spell in interactableSpells)
+                {
+                    if (!spell.isObstacle) continue;
+                    if (CircleCollision(newPosition, playerRadius, spell.position, spell.hitbox)) canMove = false;
+                }
+                if(canMove) 
+                    obj.position = newPosition;
+                else
+                    obj.position -= direction * obj.speed * (float)gameTime.ElapsedGameTime.TotalSeconds;
                 if (CircleCollision(playerPosition, playerRadius, obj.position, playerRadius))
                 {
                     if (invincibility <= 0)
                     {
-                        playerHealth -= 10;
+                        playerHealth -= 10 + (10 * obj.damageBonus);
                         invincibility = 0.75f;
                     }
                 }
@@ -82,7 +103,7 @@ namespace WizardRogueLike
 
                 foreach(StatusEffect effect in obj.effects)
                 {
-                    if(effect.Update(gameTime, obj)) removedEffect = effect;
+                    if(effect.Update(this, gameTime, obj)) removedEffect = effect;
                 }
                 if(removedEffect != null) obj.effects.Remove(removedEffect);
             }

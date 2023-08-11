@@ -40,7 +40,7 @@ namespace WizardRogueLike
                     spellName = mySpell.Name + " +" + game.spellDamageBonus[index].ToString();
                 }
                 if (!selected)
-                    _spriteBatch.DrawString(game.defaultfont, spellName, iconPosition + (Vector2.One * 3), Color.Black);
+                    _spriteBatch.DrawString(game.defaultfont, spellName, iconPosition + (Vector2.One * 3), Color.White);
                 else
                     _spriteBatch.DrawString(game.boldfont, spellName, iconPosition + (Vector2.One * 3), Color.LimeGreen);
                 //_spriteBatch.DrawString(game.defaultfont, Math.Round(game.currentCooldowns[index], 2).ToString(), cooldownPosition, Color.Black, 0, new Vector2(cooldownSize.X, 0), 1, SpriteEffects.None, 0);
@@ -57,6 +57,9 @@ namespace WizardRogueLike
         public List<SpellIcon> spellIcons = new List<SpellIcon>();
 
         int oldScrollValue = 0;
+
+        bool quickcast = false;
+
 
         void UIInstantiate()
         {
@@ -76,10 +79,16 @@ namespace WizardRogueLike
             else if (Keyboard.GetState().IsKeyDown(Keys.R)) chosenSpell = 3;
             else if (Keyboard.GetState().IsKeyDown(Keys.F)) chosenSpell = 4;
 
+            if (Keyboard.GetState().IsKeyDown(Keys.Z) && oldstate.IsKeyUp(Keys.Z)) quickcast = !quickcast;
+
             if (chosenSpell != 69)
             {
                 if (mySpells[chosenSpell] != null)
+                {
                     currentSpellIndex = chosenSpell;
+                    currentSpell = mySpells[currentSpellIndex];
+                    if(quickcast) Cast();
+                }
             }
             else
             {

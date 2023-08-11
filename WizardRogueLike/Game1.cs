@@ -3,6 +3,7 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using System.Runtime;
 
 namespace WizardRogueLike
@@ -12,10 +13,23 @@ namespace WizardRogueLike
         playing = 0,
         ended,
         paused,
-        inbetween
+        inbetween,
+        starting
     }
+    public static class Vector2Extensions
+    {
+        public static Vector2 Rotate(this Vector2 v, double degrees)
+        {
+            return new Vector2(
+                (float)(v.X * Math.Cos(degrees) - v.Y * Math.Sin(degrees)),
+                (float)(v.X * Math.Sin(degrees) + v.Y * Math.Cos(degrees))
+            );
+        }
+    }
+
     public partial class Game1 : Game
     {
+        public GameState state = GameState.starting;
 
         float tileSize;
         Vector2 gridSize;
@@ -34,9 +48,13 @@ namespace WizardRogueLike
         public int offsetX2 = 0;
         public int offsetY2 = 33;
 
-        Random rand = new Random();
+        public Random rand = new Random();
 
         float blink = 1;
+
+        //public string titlechange = "";
+
+        KeyboardState oldstate = new KeyboardState();
 
         public Game1()
         {
@@ -55,13 +73,20 @@ namespace WizardRogueLike
 
             _graphics.ApplyChanges();
 
-            allAvailableSpells.Add(typeof(Fireball));
-            allAvailableSpells.Add(typeof(ToxicBall));
-            allAvailableSpells.Add(typeof(IceBall));
+            interactableSpells = new List<Spell>();
+
+            allAvailableSpells = new List<Type>();
+
+            allAvailableSpells.Add(typeof(FireBall));
+            allAvailableSpells.Add(typeof(VenomDart));
+            allAvailableSpells.Add(typeof(FrostShard));
+            allAvailableSpells.Add(typeof(ShockBolt));
+            allAvailableSpells.Add(typeof(AquaJet));
+            allAvailableSpells.Add(typeof(AirBlast));
+            allAvailableSpells.Add(typeof(VineSnare));
+            allAvailableSpells.Add(typeof(EarthSpike));
+            allAvailableSpells.Add(typeof(ShadowBolt));
             allAvailableSpells.Add(typeof(Summon));
-            allAvailableSpells.Add(typeof(Dash));
-            allAvailableSpells.Add(typeof(ElectroBall));
-            allAvailableSpells.Add(typeof(WaterBall));
 
             mySpells = new List<Type>(5);
             currentCooldowns = new List<float>(5);
@@ -73,7 +98,7 @@ namespace WizardRogueLike
                 spellDamageBonus.Add(0);
             }
 
-            //mySpells[1] = typeof(WaterWave);
+            //mySpells[1] = typeof(VoidEruption);
 
             gamePhase = 0;
 
@@ -81,7 +106,7 @@ namespace WizardRogueLike
 
             BetweenInitialize();
 
-            Window.Title = "Shadow Wizard Money Gang ⚫🧙‍♂️💸💪";
+            //Window.Title = "Shadow Wizard Money Gang ⚫🧙‍♂️💸💪";
 
             base.Initialize();
         }
@@ -123,29 +148,22 @@ namespace WizardRogueLike
             if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
                 Exit();
 
+            
             if (state == GameState.playing)
             {
+                Window.Title = "Unleashing Chaos Upon the Mortals";
                 if(blink > 0) blink -= (float)gameTime.ElapsedGameTime.TotalSeconds;
-                else
-                {
-                    if (Window.Title == "😎😎😎😎") 
-                        Window.Title = "Shadow Wizard Money Gang ⚫🧙‍♂️💸💪";
-                    else 
-                    {
-                        Window.Title = "😎😎😎😎";
-                    }
-                    blink = 1;
-                }
                 playerUpdate(gameTime);
                 StaffUpdate();
                 enemyUpdate(gameTime);
                 BulletUpdate(gameTime);
                 UIUpdate(gameTime);
-                
+                UpdateWave(gameTime);
+
             }
             else if(state == GameState.ended)
             {
-                Window.Title = "ggs 😭😭😭😭😭";
+                Window.Title = "Sanity Shattered, but the Madness Endures";
                 if (Keyboard.GetState().IsKeyDown(Keys.Enter))
                 {
                     Initialize();
@@ -154,8 +172,13 @@ namespace WizardRogueLike
             }
             else if(state == GameState.inbetween)
             {
-                Window.Title = "Same kokociny som dostal bo🅰";
+                Window.Title = "Dwelling in the Shadows of Madness";
                 BetweenUpdate();
+            }
+            else if (state == GameState.starting)
+            {
+                Window.Title = "The Perilous Abyss Awaits";
+                if (Keyboard.GetState().IsKeyDown(Keys.Enter)) state = GameState.inbetween;
             }
 
             if (Keyboard.GetState().IsKeyDown(Keys.M))
@@ -164,14 +187,15 @@ namespace WizardRogueLike
                 ChooseSpells();
                 state = GameState.inbetween;
             }
-                // TODO: Add your update logic here
+            // TODO: Add your update logic here
 
-                base.Update(gameTime);
+            oldstate = Keyboard.GetState();
+            base.Update(gameTime);
         }
 
         protected override void Draw(GameTime gameTime)
         {
-            GraphicsDevice.Clear(Color.White);
+            GraphicsDevice.Clear(Color.Black);
 
             Matrix Transform = Matrix.CreateTranslation(offsetX, offsetY, 0);
 
@@ -183,10 +207,10 @@ namespace WizardRogueLike
             if (state == GameState.playing)
             {
                 Leveldraw();
-                enemyDraw();
                 BulletDraw(gameTime);
+                enemyDraw();
                 PlayerDraw();
-                UpdateWave(gameTime);
+                _spriteBatch.DrawString(defaultfont, Math.Round(playerHealth, 0).ToString(), Vector2.One * 16, Color.Red, 0, Vector2.Zero, 2, SpriteEffects.None, 0);
             }
             else if(state == GameState.ended)
             {
@@ -196,8 +220,11 @@ namespace WizardRogueLike
             {
                 BetweenDraw();
             }
-
-            _spriteBatch.DrawString(defaultfont, playerHealth.ToString(), Vector2.One * 16, Color.Red, 0, Vector2.Zero, 2, SpriteEffects.None, 0);
+            else if(state == GameState.starting)
+            {
+                int alignText = (int)defaultfont.MeasureString("Dare to conquer the Perilous Abyss? \nPress Enter to enter.").X;
+                _spriteBatch.DrawString(defaultfont, "Dare to conquer the Perilous Abyss? \nPress the 'Enter' key to embark on your quest.", areaSize / 2 - ((Vector2.UnitX * alignText) / 2), Color.White);
+            }
             _spriteBatch.End();
 
             _spriteBatch.Begin();

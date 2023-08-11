@@ -16,7 +16,7 @@ namespace WizardRogueLike
         
         public List<Spell> bullets = new List<Spell>();
 
-        float playerHealth = 100;
+        public float playerHealth = 100;
 
         public Vector2 playerPosition = new Vector2(0, 0);
         public float playerRadius = 21;
@@ -49,6 +49,7 @@ namespace WizardRogueLike
         {
             if (invincibility > 0) invincibility -= (float)gameTime.ElapsedGameTime.TotalSeconds;
             if (playerHealth <= 0) state = GameState.ended;
+            else if (playerHealth > 100) playerHealth = 100;
             Vector2 direction = Vector2.Zero;
             
             if (Mouse.GetState().RightButton == ButtonState.Pressed)
@@ -115,9 +116,26 @@ namespace WizardRogueLike
             staffPosition = playerPosition + (Vector2.One * truePlayerR);
 
 
-            if (Mouse.GetState().LeftButton == ButtonState.Pressed && canCast && currentSpell != null && currentCooldowns[currentSpellIndex] <= 0)
+            if (Mouse.GetState().LeftButton == ButtonState.Pressed)
             {
+                Cast();
+            }
+            else if (Mouse.GetState().LeftButton == ButtonState.Released) canCast = true;
+        }
 
+        void PlayerDraw()
+        {
+            if (invincibility <= 0) _spriteBatch.Draw(playerTexture, playerPosition, Color.White);
+            else _spriteBatch.Draw(playerTexture, playerPosition, Color.Gray);
+            if(isMoving)
+                _spriteBatch.Draw(targetTexture, playerTarget, Color.White);
+            _spriteBatch.Draw(staffTexture, staffPosition, null, Color.White, staffRotation, staffOrigin, Vector2.One, SpriteEffects.None, 0);
+        }
+
+        public void Cast()
+        {
+            if (canCast && currentSpell != null && currentCooldowns[currentSpellIndex] <= 0)
+            {
                 Vector2 direction = (playerPosition - Mouse.GetState().Position.ToVector2()) + Vector2.UnitX * offsetX;
                 direction.Normalize();
                 Spell newSpellCast = (Spell)Activator.CreateInstance(currentSpell, playerPosition - (direction * staffTexture.Width), -direction, 300, false);
@@ -139,16 +157,6 @@ namespace WizardRogueLike
                 canCast = false;
                 currentCooldowns[currentSpellIndex] = newSpellCast.cooldown;
             }
-            else if (Mouse.GetState().LeftButton == ButtonState.Released) canCast = true;
-        }
-
-        void PlayerDraw()
-        {
-            if (invincibility <= 0) _spriteBatch.Draw(playerTexture, playerPosition, Color.White);
-            else _spriteBatch.Draw(playerTexture, playerPosition, Color.Gray);
-            if(isMoving)
-                _spriteBatch.Draw(targetTexture, playerTarget, Color.White);
-            _spriteBatch.Draw(staffTexture, staffPosition, null, Color.White, staffRotation, staffOrigin, Vector2.One, SpriteEffects.None, 0);
         }
         
     }
