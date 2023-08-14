@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using System.Runtime.CompilerServices;
 using System.Diagnostics;
 using Microsoft.Xna.Framework.Input;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace WizardRogueLike
 {
@@ -468,7 +469,7 @@ namespace WizardRogueLike
                         hasReacted = true;
                     }
                 }
-                if (hasReacted) game.reationCooldown = 3;
+                if (hasReacted) game.reationCooldown = 1f;
             }
 
             enemyhit.effects.AddRange(newEffects);
@@ -502,7 +503,7 @@ namespace WizardRogueLike
             this.lifetime = 1f;
             myElement = element.none;
             this.damage = 0;
-            this.hitbox = 128;
+            this.hitbox = 64;
         }
 
         public MagmaZone(Vector2 _position, Vector2 _direction, float _speed, bool _isEnemy, float _lifetime) : base(_position, _direction, _speed, _isEnemy)
@@ -514,7 +515,7 @@ namespace WizardRogueLike
             this.lifetime = _lifetime;
             myElement = element.none;
             this.damage = 0;
-            this.hitbox = 128;
+            this.hitbox = 64;
         }
 
         public override void Instantiate(Game1 game)
@@ -531,7 +532,7 @@ namespace WizardRogueLike
             {
                 foreach (GameObject enemy in game.enemyList)
                 {
-                    if (game.CircleCollision(position, hitbox, enemy.position, game.playerRadius))
+                    if (game.CircleCollision(position + (Vector2.One * hitbox), hitbox, (enemy.position + Vector2.One * enemy.hitBox), enemy.hitBox))
                     {
                         enemy.Hit(game, (10 + damage) * (float)gameTime.ElapsedGameTime.TotalSeconds);
                         Hit(game, gameTime, enemy, (1 + damage) * (float)gameTime.ElapsedGameTime.TotalSeconds);
@@ -582,7 +583,7 @@ namespace WizardRogueLike
             {
                 foreach (GameObject enemy in game.enemyList)
                 {
-                    if (game.CircleOnBox(enemy.position, game.playerRadius, position, spellTexture.Bounds.Size.ToVector2()))
+                    if (game.CircleOnBox((enemy.position + Vector2.One * enemy.hitBox), enemy.hitBox, position, spellTexture.Bounds.Size.ToVector2()))
                     {
                         enemy.Hit(game, (10 + damage) * (float)gameTime.ElapsedGameTime.TotalSeconds);
                         Hit(game, gameTime, enemy, (1 + damage) * (float)gameTime.ElapsedGameTime.TotalSeconds);
@@ -634,7 +635,7 @@ namespace WizardRogueLike
             {
                 foreach (GameObject enemy in game.enemyList)
                 {
-                    if (game.CircleOnBox(enemy.position, game.playerRadius, position, spellTexture.Bounds.Size.ToVector2()))
+                    if (game.CircleCollision((enemy.position + Vector2.One * enemy.hitBox), enemy.hitBox, position, hitbox))
                     {
                         enemy.Hit(game, (5 + damage) * (float)gameTime.ElapsedGameTime.TotalSeconds);
                         Hit(game, gameTime, enemy, (5 + damage) * (float)gameTime.ElapsedGameTime.TotalSeconds);
@@ -688,7 +689,7 @@ namespace WizardRogueLike
             {
                 foreach (GameObject enemy in game.enemyList)
                 {
-                    if (game.CircleCollision(position, hitbox, enemy.position, game.playerRadius))
+                    if (game.CircleCollision(position, hitbox, (enemy.position + Vector2.One * enemy.hitBox), enemy.hitBox))
                     {
                         enemy.Hit(game, (5 + damage) * (float)gameTime.ElapsedGameTime.TotalSeconds);
                         Slow newStatus = new Slow(3, 0);
@@ -746,7 +747,7 @@ namespace WizardRogueLike
             {
                 foreach (GameObject enemy in game.enemyList)
                 {
-                    if (game.CircleCollision(position, hitbox, enemy.position, game.playerRadius))
+                    if (game.CircleCollision(position, hitbox, (enemy.position + Vector2.One * enemy.hitBox), enemy.hitBox))
                     {
                         //enemy.health -= (5 + damage) * (float)gameTime.ElapsedGameTime.TotalSeconds;
                         Confused newStatus = new Confused(3, 0);
@@ -804,7 +805,7 @@ namespace WizardRogueLike
             {
                 foreach (GameObject enemy in game.enemyList)
                 {
-                    if (game.CircleCollision(position, hitbox, enemy.position, game.playerRadius))
+                    if (game.CircleCollision(position, hitbox, (enemy.position + Vector2.One * enemy.hitBox), enemy.hitBox))
                     {
                         enemy.health -= (5 + damage) * (float)gameTime.ElapsedGameTime.TotalSeconds;
                         Confused newStatus = new Confused(3, 0);
@@ -862,7 +863,7 @@ namespace WizardRogueLike
             {
                 foreach (GameObject enemy in game.enemyList)
                 {
-                    if (game.CircleCollision(position, hitbox, enemy.position, game.playerRadius))
+                    if (game.CircleCollision(position, hitbox, (enemy.position + Vector2.One * enemy.hitBox), enemy.hitBox))
                     {
                         enemy.Hit(game, damage * (float)gameTime.ElapsedGameTime.TotalSeconds);
                         Hit(game, gameTime, enemy, damage * (float)gameTime.ElapsedGameTime.TotalSeconds);
@@ -893,7 +894,7 @@ namespace WizardRogueLike
             {
                 foreach (GameObject enemy in game.enemyList)
                 {
-                    if (game.CircleCollision(position, hitbox, enemy.position, game.playerRadius))
+                    if (game.CircleCollision(position, hitbox, (enemy.position + Vector2.One * enemy.hitBox), enemy.hitBox))
                     {
                         enemy.Hit(game, 5 + damage);
                         Hit(game, gameTime, enemy, 5 + damage);
@@ -927,7 +928,7 @@ namespace WizardRogueLike
             {
                 foreach (GameObject enemy in game.enemyList)
                 {
-                    if (game.CircleCollision(position, hitbox, enemy.position, game.playerRadius))
+                    if (game.CircleCollision(position, hitbox, (enemy.position + Vector2.One * enemy.hitBox), enemy.hitBox))
                     {
                         enemy.Hit(game, 5 + damage);
                         Hit(game, gameTime, enemy, 5 + damage);
@@ -962,7 +963,7 @@ namespace WizardRogueLike
             {
                 foreach (GameObject enemy in game.enemyList)
                 {
-                    if (game.CircleCollision(position, hitbox, enemy.position, game.playerRadius))
+                    if (game.CircleCollision(position, hitbox, (enemy.position + Vector2.One * enemy.hitBox), enemy.hitBox))
                     {
                         enemy.Hit(game, 5 + damage);
                         Hit(game, gameTime, enemy, 5 + damage);
@@ -996,7 +997,7 @@ namespace WizardRogueLike
             {
                 foreach (GameObject enemy in game.enemyList)
                 {
-                    if (game.CircleCollision(position, hitbox, enemy.position, game.playerRadius))
+                    if (game.CircleCollision(position, hitbox, (enemy.position + Vector2.One * enemy.hitBox), enemy.hitBox))
                     {
                         enemy.Hit(game, 5 + damage);
                         Stun newStatus = new Stun(3, 0);
@@ -1038,7 +1039,7 @@ namespace WizardRogueLike
             {
                 foreach (GameObject enemy in game.enemyList)
                 {
-                    if (game.CircleCollision(position, hitbox, enemy.position, game.playerRadius))
+                    if (game.CircleCollision(position, hitbox, (enemy.position + Vector2.One * enemy.hitBox), enemy.hitBox))
                     {
                         enemy.Hit(game, 5 + damage);
                         Hit(game, gameTime, enemy, 5 + damage);
@@ -1072,7 +1073,7 @@ namespace WizardRogueLike
             {
                 foreach (GameObject enemy in game.enemyList)
                 {
-                    if (game.CircleCollision(position, hitbox, enemy.position, game.playerRadius))
+                    if (game.CircleCollision(position, hitbox, (enemy.position + Vector2.One * enemy.hitBox), enemy.hitBox))
                     {
                         enemy.Hit(game, 5 + damage);
                         Hit(game, gameTime, enemy, 5 + damage);
@@ -1113,7 +1114,7 @@ namespace WizardRogueLike
             {
                 foreach (GameObject enemy in game.enemyList)
                 {
-                    if (game.CircleCollision(position, hitbox, enemy.position, game.playerRadius))
+                    if (game.CircleCollision(position, hitbox, (enemy.position + Vector2.One * enemy.hitBox), enemy.hitBox))
                     {
                         enemy.Hit(game, 5 + damage);
                         Hit(game, gameTime, enemy, 5 + damage);
@@ -1154,7 +1155,7 @@ namespace WizardRogueLike
             {
                 foreach (GameObject enemy in game.enemyList)
                 {
-                    if (game.CircleCollision(position, hitbox, enemy.position, game.playerRadius))
+                    if (game.CircleCollision(position, hitbox, (enemy.position + Vector2.One * enemy.hitBox), enemy.hitBox))
                     {
                         enemy.Hit(game, 5 + damage);
                         Hit(game, gameTime, enemy, 5 + damage);
@@ -1195,7 +1196,7 @@ namespace WizardRogueLike
             {
                 foreach (GameObject enemy in game.enemyList)
                 {
-                    if (game.CircleCollision(position, hitbox, enemy.position, game.playerRadius))
+                    if (game.CircleCollision(position, hitbox, (enemy.position + Vector2.One * enemy.hitBox), enemy.hitBox))
                     {
                         enemy.Hit(game, 5 + damage);
                         Hit(game, gameTime, enemy, 5 + damage);
@@ -1237,7 +1238,7 @@ namespace WizardRogueLike
             {
                 foreach (GameObject enemy in game.enemyList)
                 {
-                    if (game.CircleCollision(position, hitbox, enemy.position, game.playerRadius))
+                    if (game.CircleCollision(position, hitbox, (enemy.position + Vector2.One * enemy.hitBox), enemy.hitBox))
                     {
                         enemy.Hit(game, 5 + damage);
                         Hit(game, gameTime, enemy, 5 + damage);
@@ -1300,7 +1301,7 @@ namespace WizardRogueLike
             {
                 foreach (GameObject enemy in game.enemyList)
                 {
-                    if (game.CircleCollision(position, hitbox, enemy.position, game.playerRadius))
+                    if (game.CircleCollision(position, hitbox, (enemy.position + Vector2.One * enemy.hitBox), enemy.hitBox))
                     {
                         enemy.Hit(game, (5 + damage) * (float)gameTime.ElapsedGameTime.TotalSeconds);
                         enemy.position += direction * speed * (float)gameTime.ElapsedGameTime.TotalSeconds;
@@ -1353,7 +1354,7 @@ namespace WizardRogueLike
             {
                 foreach (GameObject enemy in game.enemyList)
                 {
-                    if (game.CircleCollision(position, hitbox, enemy.position, game.playerRadius))
+                    if (game.CircleCollision(position, hitbox, (enemy.position + Vector2.One * enemy.hitBox), enemy.hitBox))
                     {
                         enemy.Hit(game, (5 + damage) * (float)gameTime.ElapsedGameTime.TotalSeconds);
                         Vector2 enemydirection = enemy.target - enemy.position;
@@ -1408,7 +1409,7 @@ namespace WizardRogueLike
             {
                 foreach (GameObject enemy in game.enemyList)
                 {
-                    if (game.CircleCollision(position, hitbox, enemy.position, game.playerRadius))
+                    if (game.CircleCollision(position, hitbox, (enemy.position + Vector2.One * enemy.hitBox), enemy.hitBox))
                     {
                         //enemy.health -= (5 + damage) * (float)gameTime.ElapsedGameTime.TotalSeconds;
                         Weakened newStatus = new Weakened(3, 0);
@@ -1448,7 +1449,7 @@ namespace WizardRogueLike
             {
                 foreach (GameObject enemy in game.enemyList)
                 {
-                    if (game.CircleCollision(position, hitbox, enemy.position, game.playerRadius))
+                    if (game.CircleCollision(position, hitbox, (enemy.position + Vector2.One * enemy.hitBox), enemy.hitBox))
                     {
                         enemy.Hit(game, 10 + damage);
                         Hit(game, gameTime, enemy, 10 + damage);
@@ -1499,10 +1500,10 @@ namespace WizardRogueLike
             for (int i = -1; i <= 1; i++)
             {
                 //if (i == 0) continue;
-                Vector2 direction = (position - Mouse.GetState().Position.ToVector2()) + Vector2.UnitX * game.offsetX;
+                Vector2 direction = (position - game.CursorPosition) + Vector2.UnitX * game.offsetX;
                 direction.Normalize();
                 Vector2 rightDirection = new Vector2(direction.Y, -direction.X);
-                Vector2 newDirection = (position - Mouse.GetState().Position.ToVector2()) + Vector2.UnitX * game.offsetX + (rightDirection * (32 * i));
+                Vector2 newDirection = (position - game.CursorPosition) + Vector2.UnitX * game.offsetX + (rightDirection * (32 * i));
                 newDirection.Normalize();
                 VenomDart newSpellCast = new VenomDart(position - (newDirection), -newDirection, 300, false);
                 newSpellCast.Instantiate(game);
@@ -1517,7 +1518,7 @@ namespace WizardRogueLike
             {
                 foreach (GameObject enemy in game.enemyList)
                 {
-                    if (game.CircleCollision(position, hitbox, enemy.position, game.playerRadius))
+                    if (game.CircleCollision(position, hitbox, (enemy.position + Vector2.One * enemy.hitBox), enemy.hitBox))
                     {
                         enemy.Hit(game, 5 + damage);
                         Hit(game, gameTime, enemy, 5 + damage);
@@ -1550,7 +1551,7 @@ namespace WizardRogueLike
             {
                 foreach (GameObject enemy in game.enemyList)
                 {
-                    if (game.CircleCollision(position, hitbox, enemy.position, game.playerRadius))
+                    if (game.CircleCollision(position, hitbox, (enemy.position + Vector2.One * enemy.hitBox), enemy.hitBox))
                     {
                         enemy.Hit(game, 10 + damage);
                         Hit(game, gameTime, enemy, 10 + damage);
@@ -1609,7 +1610,7 @@ namespace WizardRogueLike
             {
                 foreach (GameObject enemy in game.enemyList)
                 {
-                    if (game.CircleCollision(position, hitbox, enemy.position, game.playerRadius))
+                    if (game.CircleCollision(position, hitbox, (enemy.position + Vector2.One * enemy.hitBox), enemy.hitBox))
                     {
                         enemy.Hit(game, 3 + damage);
                         Hit(game, gameTime, enemy, 3 + damage);
@@ -1626,7 +1627,7 @@ namespace WizardRogueLike
                         {
                             Vector2 newDirection = enemy.position - closeEnemy.position;
                             newDirection.Normalize();
-                            Thunderstrike newSpellCast = new Thunderstrike(enemy.position - (newDirection * (game.playerRadius * 2f)), -newDirection, 600, false);
+                            Thunderstrike newSpellCast = new Thunderstrike(enemy.position - (newDirection * (closeEnemy.hitBox * 2f)), -newDirection, 600, false);
                             newSpellCast.Instantiate(game);
                             newSpellCast.damage = damage-1;
                             game.spellsToSpawn.Add(newSpellCast);
@@ -1739,7 +1740,7 @@ namespace WizardRogueLike
             {
                 foreach (GameObject enemy in game.enemyList)
                 {
-                    if (game.CircleOnBox(enemy.position, game.playerRadius, position, spellTexture.Bounds.Size.ToVector2()))
+                    if (game.CircleOnBox((enemy.position + Vector2.One * enemy.hitBox), enemy.hitBox, position, spellTexture.Bounds.Size.ToVector2()))
                     {
                         enemy.Hit(game, (10 + damage) * (float)gameTime.ElapsedGameTime.TotalSeconds);
                         Hit(game, gameTime, enemy, (10 + damage) * (float)gameTime.ElapsedGameTime.TotalSeconds);
@@ -1863,7 +1864,7 @@ namespace WizardRogueLike
             {
                 foreach (GameObject enemy in game.enemyList)
                 {
-                    if (game.CircleOnBox(enemy.position, game.playerRadius, position + (Vector2.One * (hitbox / 3.5f)), Vector2.One * hitbox))
+                    if (game.CircleOnBox((enemy.position + Vector2.One * enemy.hitBox), enemy.hitBox, position + (Vector2.One * (hitbox / 3.5f)), Vector2.One * hitbox))
                     {
                         enemy.Hit(game, (11 + damage) * (float)gameTime.ElapsedGameTime.TotalSeconds);
                         Stun newStatus = new Stun(2, 0);
@@ -1903,7 +1904,7 @@ namespace WizardRogueLike
             {
                 foreach (GameObject enemy in game.enemyList)
                 {
-                    if (game.CircleCollision(position, hitbox, enemy.position, game.playerRadius))
+                    if (game.CircleCollision(position, hitbox, (enemy.position + Vector2.One * enemy.hitBox), enemy.hitBox))
                     {
                         enemy.Hit(game, 10 + damage);
                         Hit(game, gameTime, enemy, 10 + damage);
@@ -1922,10 +1923,72 @@ namespace WizardRogueLike
     #endregion
 
     #region Unique
+
+    public class SummonedOBJ : GameObject
+    {
+        Spell mySpell;
+        public SummonedOBJ(Vector2 _position, float _health, Spell mySpell) : base(_position, _health)
+        {
+            this.position = _position;
+            this.speed = 48;
+            this.baseSpeed = this.speed;
+            this.health = _health;
+            this.maxHealth = health;
+            this.mySpell = mySpell;
+        }
+
+        public override void Initiate(Game1 game)
+        {
+            texture = game.Content.Load<Texture2D>("sprites/Characters/skull");
+        }
+
+        public virtual void Draw(Game1 game, SpriteBatch _spriteBatch)
+        {
+            Color enemyColor = Color.White;
+
+            if (effects.Count > 0)
+                enemyColor = effects.Last().statusColor;
+
+            _spriteBatch.Draw(texture, position, enemyColor);
+
+            Rectangle healthbar = new Rectangle(Point.Zero, new Point((int)(16 * (health / 20)), 8));
+
+            _spriteBatch.Draw(game.boxTexture, position - (Vector2.UnitY * (game.playerRadius / 2)) - Vector2.UnitX * (healthbar.Size.X / 2) + Vector2.UnitX * (game.playerRadius * 1.5f), healthbar, Color.Green, 0, Vector2.Zero, 1, SpriteEffects.None, 0);
+        }
+
+        public override bool Update(Game1 game, GameTime gameTime)
+        {
+            if (health <= 0)
+            {
+                return true;
+            }
+            GameObject following = null;
+            float closest = 99999;
+            foreach (GameObject enemy in game.enemyList)
+            {
+                if (game.CircleCollision(position, game.playerRadius, (enemy.position + Vector2.One * enemy.hitBox), enemy.hitBox))
+                {
+                    enemy.Hit(game, (5 + mySpell.damage) * (float)gameTime.ElapsedGameTime.TotalSeconds);
+                    health -= 3.5f * (float)gameTime.ElapsedGameTime.TotalSeconds;
+                    mySpell.Hit(game, gameTime, enemy, (5 + mySpell.damage) * (float)gameTime.ElapsedGameTime.TotalSeconds);
+
+                }
+                if (Vector2.Distance(position, enemy.position) < closest)
+                {
+                    following = enemy;
+                    closest = Vector2.Distance(position, enemy.position);
+                }
+            }
+            if (following == null) return false;
+            Vector2 direction = following.position - position;
+            direction.Normalize();
+            position += direction * speed * (float)gameTime.ElapsedGameTime.TotalSeconds;
+            return base.Update(game, gameTime);
+        }
+    }
     class Summon : Spell
     {
-        Texture2D summonTexture;
-        List<GameObject> summonList = new List<GameObject>();
+        List<SummonedOBJ> summonList = new List<SummonedOBJ>();
 
         public Summon(Vector2 _position, Vector2 _direction, float _speed, bool _isEnemy) : base(_position, _direction, _speed, _isEnemy)
         {
@@ -1940,42 +2003,17 @@ namespace WizardRogueLike
 
         public override void Instantiate(Game1 game)
         {
-            summonTexture = game.Content.Load<Texture2D>("sprites/Characters/purple_character");
-
-            summonList.Add(new GameObject(position, summonTexture, 48, 10));
+            SummonedOBJ newSummon = new SummonedOBJ(position, 10, this);
+            newSummon.Initiate(game);
+            summonList.Add(newSummon);
         }
 
         public override bool Update(Game1 game, GameTime gameTime)
         {
-            GameObject removed = null;
-            foreach(GameObject summon in summonList)
+            SummonedOBJ removed = null;
+            foreach(SummonedOBJ summon in summonList)
             {
-                if (summon.health <= 0)
-                {
-                    removed = summon;
-                    continue;
-                }
-                GameObject following = null;
-                float closest = 99999;
-                foreach(GameObject enemy in game.enemyList)
-                {
-                    if (game.CircleCollision(summon.position, game.playerRadius, enemy.position, game.playerRadius))
-                    {
-                        enemy.Hit(game, (5 + damage) * (float)gameTime.ElapsedGameTime.TotalSeconds);
-                        summon.health -= 3.5f * (float)gameTime.ElapsedGameTime.TotalSeconds;
-                        Hit(game, gameTime, enemy, (5 + damage) * (float)gameTime.ElapsedGameTime.TotalSeconds);
-                        
-                    }
-                    if (Vector2.Distance(position, enemy.position) < closest)
-                    {
-                        following = enemy;
-                        closest = Vector2.Distance(position, enemy.position);
-                    }
-                }
-                if (following == null) continue;
-                Vector2 direction = following.position - summon.position;
-                direction.Normalize();
-                summon.position += direction * summon.speed * (float)gameTime.ElapsedGameTime.TotalSeconds;
+                if(summon.Update(game, gameTime)) removed = summon;
             }
             summonList.Remove(removed);
             return false;
@@ -1983,9 +2021,9 @@ namespace WizardRogueLike
 
         public override void Draw(Game1 game, SpriteBatch _spriteBatch, GameTime gameTime)
         {
-            foreach(GameObject summon in summonList)
+            foreach(SummonedOBJ summon in summonList)
             {
-                _spriteBatch.Draw(summonTexture, summon.position, Color.White);
+                summon.Draw(game, _spriteBatch);
             }
         }
     }
@@ -2010,7 +2048,7 @@ namespace WizardRogueLike
 
         public override void Instantiate(Game1 game)
         {
-            Vector2 direction = (game.playerPosition - Mouse.GetState().Position.ToVector2()) + Vector2.UnitX * game.offsetX;
+            Vector2 direction = (game.playerPosition - game.CursorPosition) + Vector2.UnitX * game.offsetX;
             direction.Normalize();
             game.playerPosition -= direction * dashStrength;
             game.isMoving = false;
@@ -2062,6 +2100,36 @@ namespace WizardRogueLike
         {
             if(spellTexture != null)
                 _spriteBatch.Draw(spellTexture, position, Color.White);
+        }
+    }
+    class BanHammer : Spell
+    {
+        public BanHammer(Vector2 _position, Vector2 _direction, float _speed, bool _isEnemy) : base(_position, _direction, _speed, _isEnemy)
+        {
+            this.position = _position;
+            this.direction = _direction;
+            this.speed = _speed;
+            this.isEnemy = _isEnemy;
+            this.cooldown = 0;
+            myElement = element.dark;
+        }
+
+        public override bool Update(Game1 game, GameTime gameTime)
+        {
+            if (!isEnemy)
+            {
+                foreach (GameObject enemy in game.enemyList)
+                {
+                    if (game.CircleCollision(position, hitbox, (enemy.position + Vector2.One * enemy.hitBox), enemy.hitBox))
+                    {
+                        enemy.Hit(game, 999 + damage);
+                        Hit(game, gameTime, enemy, 999 + damage);
+                        return true;
+                    }
+                }
+            }
+            return base.Update(game, gameTime);
+
         }
     }
 

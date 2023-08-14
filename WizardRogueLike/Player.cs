@@ -17,6 +17,7 @@ namespace WizardRogueLike
         public List<Spell> bullets = new List<Spell>();
 
         public float playerHealth = 100;
+        public float playerMaxHealth = 100;
 
         public Vector2 playerPosition = new Vector2(0, 0);
         public float playerRadius = 21;
@@ -27,7 +28,7 @@ namespace WizardRogueLike
         Vector2 staffOrigin = new Vector2(0, 0);
         float staffRotation = 0;
 
-        float invincibility = 0;
+        public float invincibility = 0;
 
         bool canCast = true;
 
@@ -49,12 +50,12 @@ namespace WizardRogueLike
         {
             if (invincibility > 0) invincibility -= (float)gameTime.ElapsedGameTime.TotalSeconds;
             if (playerHealth <= 0) state = GameState.ended;
-            else if (playerHealth > 100) playerHealth = 100;
+            else if (playerHealth > playerMaxHealth) playerHealth = playerMaxHealth;
             Vector2 direction = Vector2.Zero;
             
             if (Mouse.GetState().RightButton == ButtonState.Pressed)
             {
-                playerTarget = (Mouse.GetState().Position.ToVector2() - Vector2.UnitX * offsetX) - Vector2.One * 32;
+                playerTarget = (CursorPosition - Vector2.UnitX * offsetX) - Vector2.One * 32;
                 isMoving = true;
             }
 
@@ -78,23 +79,86 @@ namespace WizardRogueLike
 
             bool canMoveX = true;
             bool canMoveY = true;
-
+            bool hasRoomChanged = false;
             for (int y = 0; y < gridSize.Y; y++)
             {
                 for(int x = 0; x < gridSize.X; x++)
                 {
-                    if (x == 0 || x == gridSize.X - 1)
+                    int xCenter = (int)gridSize.X / 2;
+                    int yCenter = (int)gridSize.Y / 2;
+
+                    // Check if the player is moving out of the room through the wall
+                    if (x == 0 && generator.rooms[(int)currentDungeonPosition.X, (int)currentDungeonPosition.Y].neighbours[2] == 0 && futurePosition.X < (tileSize / 4))
                     {
-                        if (CircleOnBox(new Vector2(futurePosition.X, 0), playerRadius, new Vector2(x * tileSize, y * tileSize), Vector2.One * tileSize))
-                        {
-                            canMoveX = false;
-                        }
+                        canMoveX = false;
                     }
-                    if (y == 0 || y == gridSize.Y - 1)
+                    else if (x == gridSize.X - 1 && generator.rooms[(int)currentDungeonPosition.X, (int)currentDungeonPosition.Y].neighbours[3] == 0 && futurePosition.X > _graphics.PreferredBackBufferWidth - (tileSize))
                     {
-                        if (CircleOnBox(new Vector2(0, futurePosition.Y), playerRadius, new Vector2(x * tileSize, y * tileSize), Vector2.One * tileSize))
+                        canMoveX = false;
+                    }
+
+                    if (y == 0 && generator.rooms[(int)currentDungeonPosition.X, (int)currentDungeonPosition.Y].neighbours[0] == 0 && futurePosition.Y < (tileSize / 4))
+                    {
+                        canMoveY = false;
+                    }
+                    else if (y == gridSize.Y - 1 && generator.rooms[(int)currentDungeonPosition.X, (int)currentDungeonPosition.Y].neighbours[1] == 0 && futurePosition.Y > areaSize.Y - (tileSize) - playerRadius)
+                    {
+                        canMoveY = false;
+                    }
+
+                    Vector2 newDungeongPosition = currentDungeonPosition;
+
+                    // Handle room transitions
+                    if (canMoveX && futurePosition.X < 0)
+                    {
+                        if (futurePosition.Y > ((yCenter - doorSize) * tileSize) && futurePosition.Y < ((yCenter + doorSize) * tileSize))
                         {
-                            canMoveY = false;
+                            // Transition to the neighboring room on the left
+                            newDungeongPosition.X -= 1;
+                        }
+                        else canMoveX = false;
+                    }
+                    else if (canMoveX && futurePosition.X > _graphics.PreferredBackBufferWidth - (playerRadius * 2))
+                    {
+                        if (futurePosition.Y > ((yCenter - doorSize) * tileSize)  && futurePosition.Y < ((yCenter + doorSize) * tileSize) )
+                        {
+                            // Transition to the neighboring room on the right
+                            newDungeongPosition.X += 1;
+                        }
+                        else canMoveX = false;
+                    }
+
+                    if (canMoveY && futurePosition.Y < 0)
+                    {
+                        if (futurePosition.X > ((xCenter - doorSize) * tileSize)  && futurePosition.X < ((xCenter + doorSize) * tileSize))
+                        {
+                            // Transition to the neighboring room above
+                            newDungeongPosition.Y -= 1;
+                        }
+                        else canMoveY = false;
+                    }
+                    else if (canMoveY && futurePosition.Y > areaSize.Y - (playerRadius * 3))
+                    {
+                        if (futurePosition.X > ((xCenter - doorSize) * tileSize) && futurePosition.X < ((xCenter + doorSize) * tileSize))
+                        {
+                            // Transition to the neighboring room below
+                            newDungeongPosition.Y += 1;
+                            
+                            
+                        }
+                        else canMoveY = false;
+                    }
+                    
+                    if(newDungeongPosition != currentDungeonPosition)
+                    {
+                        if (newDungeongPosition.X < gridWidth && newDungeongPosition.X >= 0 && newDungeongPosition.Y < gridHeight && newDungeongPosition.Y >= 0)
+                        {
+                            if (newDungeongPosition.Y - currentDungeonPosition.Y == 1) futurePosition.Y = (tileSize * 3);
+                            else if (newDungeongPosition.Y - currentDungeonPosition.Y == -1) futurePosition.Y = _graphics.PreferredBackBufferHeight - (tileSize * 3);
+                            if (newDungeongPosition.X - currentDungeonPosition.X == 1) futurePosition.X = (tileSize * 2);
+                            else if (newDungeongPosition.X - currentDungeonPosition.X == -1) futurePosition.X = _graphics.PreferredBackBufferWidth - (tileSize * 2);
+                            currentDungeonPosition = newDungeongPosition;
+                            hasRoomChanged = true;
                         }
                     }
                 }
@@ -102,14 +166,14 @@ namespace WizardRogueLike
 
             if(canMoveX) playerPosition.X = futurePosition.X;
             if(canMoveY) playerPosition.Y = futurePosition.Y;
-
+            if (hasRoomChanged) roomChanged();
 
 
         }
 
         void StaffUpdate()
         {
-            Vector2 mouseState = Mouse.GetState().Position.ToVector2() - Vector2.UnitX * offsetX;
+            Vector2 mouseState = CursorPosition - Vector2.UnitX * offsetX;
             Vector2 dPos = playerPosition - mouseState;
             staffRotation = (float)Math.Atan2(dPos.Y, dPos.X);
 
@@ -123,11 +187,30 @@ namespace WizardRogueLike
             else if (Mouse.GetState().LeftButton == ButtonState.Released) canCast = true;
         }
 
+        //int healthBarOffset = 0;
+
         void PlayerDraw()
         {
-            if (invincibility <= 0) _spriteBatch.Draw(playerTexture, playerPosition, Color.White);
-            else _spriteBatch.Draw(playerTexture, playerPosition, Color.Gray);
-            if(isMoving)
+            
+            Rectangle healthbar = new Rectangle(Point.Zero, new Point((int)(16 * (playerHealth / 30)), 8));
+            if (invincibility <= 0)
+            {
+                //healthBarOffset = 0;
+                _spriteBatch.Draw(playerTexture, playerPosition, Color.White);
+                _spriteBatch.Draw(boxTexture, playerPosition - (Vector2.UnitY * (playerRadius / 2)) - Vector2.UnitX * (healthbar.Size.X / 2) + Vector2.UnitX * (playerRadius * 1.5f), healthbar, Color.Green, 0, Vector2.Zero, 1, SpriteEffects.None, 0);
+            }
+            else 
+            {
+                //if(blink > 0)
+                    //healthBarOffset += rand.Next(-8, 8);
+                _spriteBatch.Draw(playerTexture, playerPosition, Color.Gray);
+                _spriteBatch.Draw(boxTexture, playerPosition - (Vector2.UnitY * (playerRadius / 2)) - Vector2.UnitX * (healthbar.Size.X / 2) + Vector2.UnitX * (playerRadius * 1.5f), healthbar, Color.DarkGreen, 0, Vector2.Zero, 1, SpriteEffects.None, 0);
+                //healthBarOffset = 0;
+            }
+
+
+
+            if (isMoving)
                 _spriteBatch.Draw(targetTexture, playerTarget, Color.White);
             _spriteBatch.Draw(staffTexture, staffPosition, null, Color.White, staffRotation, staffOrigin, Vector2.One, SpriteEffects.None, 0);
         }
@@ -136,7 +219,7 @@ namespace WizardRogueLike
         {
             if (canCast && currentSpell != null && currentCooldowns[currentSpellIndex] <= 0)
             {
-                Vector2 direction = (playerPosition - Mouse.GetState().Position.ToVector2()) + Vector2.UnitX * offsetX;
+                Vector2 direction = (playerPosition - CursorPosition) + Vector2.UnitX * offsetX;
                 direction.Normalize();
                 Spell newSpellCast = (Spell)Activator.CreateInstance(currentSpell, playerPosition - (direction * staffTexture.Width), -direction, 300, false);
                 newSpellCast.Instantiate(this);
@@ -146,7 +229,7 @@ namespace WizardRogueLike
                 {
                     for (int i = 0; i < turrets.Count; i++)
                     {
-                        Vector2 directionTurret = (turrets[i].position - Mouse.GetState().Position.ToVector2()) + Vector2.UnitX * offsetX;
+                        Vector2 directionTurret = (turrets[i].position - CursorPosition) + Vector2.UnitX * offsetX;
                         directionTurret.Normalize();
                         Spell newSpellCastTurret = (Spell)Activator.CreateInstance(currentSpell, turrets[i].position - (directionTurret * staffTexture.Width), -directionTurret, 300, false);
                         newSpellCastTurret.Instantiate(this);

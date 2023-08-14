@@ -36,7 +36,7 @@ namespace WizardRogueLike
             spellTransforms.Add(typeof(AirBlast), typeof(CycloneWhirl));
             spellTransforms.Add(typeof(EarthSpike), typeof(QuakeTremor));
             spellTransforms.Add(typeof(ShadowBolt), typeof(VoidEruption));
-            spellTransforms.Add(typeof(Summon), typeof(Turret));
+            //spellTransforms.Add(typeof(Summon), typeof(Turret));
         }
 
         public void BetweenUpdate()
@@ -241,10 +241,14 @@ namespace WizardRogueLike
                     chosen = true;
             }
 
-                if (chosen)
+            if (chosen)
             {
-                
+                gridWidth = 3 + rand.Next(0, gamePhase);
+                gridHeight = 3 + rand.Next(0, gamePhase);
                 UIInstantiate();
+                dungeon = generator.GenerateDungeon(gridWidth, gridHeight);
+                currentDungeonPosition = generator.start;
+                enemyInitiate();
                 StartWave();
                 state = GameState.playing;
             }

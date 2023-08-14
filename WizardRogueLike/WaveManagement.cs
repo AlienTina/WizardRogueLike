@@ -15,34 +15,26 @@ namespace WizardRogueLike
 
         void StartWave()
         {
-            enemiesLeft = (int)(5 + Math.Pow(gamePhase, 1.5f));
+            //enemiesLeft = (int)(5 + Math.Pow(gamePhase, 1.5f));
+            for (int y = 0; y < gridHeight; y++)
+            {
+                for (int x = 0; x < gridWidth; x++)
+                {
+                    if (dungeon[x, y] == ' ')
+                    {
+                        if (generator.rooms[x, y].myType == roomType.fight)
+                            enemiesLeft += enemiesPerRoom;
+                    }
+                }
+            }
         }
 
-        void UpdateWave(GameTime gameTime)
+        public void WaveEnded()
         {
-            timeUntilNextEnemy -= (float)gameTime.ElapsedGameTime.TotalSeconds;
-            if(timeUntilNextEnemy <= 0 && enemiesLeft > 0)
-            {
-                Vector2 spawnPosition = generateRandomPosition();
-                while(CircleCollision(playerPosition, 128, spawnPosition, playerRadius))
-                {
-                    spawnPosition = generateRandomPosition();
-                }
-                GameObject newEnemy = new GameObject(spawnPosition, enemyTexture, 64, 20);
-                enemyList.Add(newEnemy);
-                timeUntilNextEnemy = (float)Math.Clamp(rand.NextDouble() * (7.0f - (gamePhase * 0.5f)), 0.5f, 10.0f);
-                enemiesLeft--;
-                
-            }
-            if (enemiesLeft == 0)
-            {
-                if (enemyList.Count == 0)
-                {
-                    gamePhase++;
-                    state = GameState.inbetween;
-                    ChooseSpells();
-                }
-            }
+            gamePhase++;
+
+            state = GameState.inbetween;
+            ChooseSpells();
         }
     }
 }
